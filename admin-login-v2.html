@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Think Like A Hacker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0f172a;
+            --bg-secondary: #1a2942;
+            --accent-cyan: #00d9ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff1744;
+            --text-primary: #e0e7ff;
+            --text-secondary: #a1aecb;
+            --border-color: rgba(0, 217, 255, 0.2);
+        }
+
+        body {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1a2942 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(26, 41, 66, 0.8);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 12px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.1);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-cyan), #00b8d4);
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.5);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .setup-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .setup-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        .error-message {
+            color: var(--accent-red);
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+            text-align: center;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: var(--accent-green);
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .version {
+            font-size: 11px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>ADMIN PORTAL</h1>
+            <p class="subtitle">Event Management System</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    placeholder="Enter your username" 
+                    required
+                    autofocus
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Enter your password" 
+                    required
+                >
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                LOGIN
+            </button>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="loading" id="loading"></div>
+        </form>
+
+        <a href="/admin/setup" class="setup-btn">Create New Admin Account</a>
+
+        <div class="footer">
+            <div class="version">Version 1.0 Production</div>
+        </div>
+    </div>
+
+    <script>
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const loading = document.getElementById('loading');
+
+            // Clear previous error
+            errorMessage.classList.remove('show');
+            errorMessage.textContent = '';
+
+            // Disable button and show loading
+            loginBtn.disabled = true;
+            loading.classList.add('show');
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store session token
+                    localStorage.setItem('adminToken', data.token);
+                    // Redirect to Start a Competition page
+                    window.location.href = '/start-competition.html';
+                } else {
+                    // Show error message
+                    errorMessage.textContent = data.message || 'Invalid credentials';
+                    errorMessage.classList.add('show');
+                    loginBtn.disabled = false;
+                    loading.classList.remove('show');
+                    document.getElementById('password').value = '';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMessage.textContent = 'Connection error. Please try again.';
+                errorMessage.classList.add('show');
+                loginBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        }
+
+        // Auto-focus on username field
+        document.getElementById('username').focus();
+    </script>
+</body>
+</html>
