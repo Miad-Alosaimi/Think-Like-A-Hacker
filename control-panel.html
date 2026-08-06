@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Think like a Hacker - Control Panel & Dashboard</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0a0e27;
+            --primary-darker: #05070f;
+            --accent-cyan: #00d9ff;
+            --accent-purple: #6b5bff;
+            --accent-green: #00ff88;
+            --accent-red: #ff1744;
+            --accent-orange: #ff6b35;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-darker) 0%, #0f1535 50%, #0a0e27 100%);
+            color: var(--text-primary);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* CONTROL PANEL SCREEN */
+        .control-panel-screen {
+            display: none;
+        }
+
+        .control-panel-screen.active {
+            display: block;
+        }
+
+        .control-header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(135deg, rgba(107, 91, 255, 0.2) 0%, rgba(0, 217, 255, 0.1) 100%);
+            padding: 40px 30px;
+            border-radius: 12px;
+            border: 2px solid var(--accent-cyan);
+        }
+
+        .control-header h1 {
+            font-size: 48px;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .control-panel-box {
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid var(--accent-purple);
+            border-radius: 12px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .control-panel-box h2 {
+            font-size: 24px;
+            color: var(--accent-purple);
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .start-button {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--accent-green) 0%, #00dd7a 100%);
+            border: none;
+            color: var(--primary-dark);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .start-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 255, 136, 0.5);
+        }
+
+        .start-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* DASHBOARD SCREEN */
+        .dashboard-screen {
+            display: none;
+        }
+
+        .dashboard-screen.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, rgba(107, 91, 255, 0.2) 0%, rgba(0, 217, 255, 0.1) 100%);
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid var(--accent-cyan);
+        }
+
+        .dashboard-header h1 {
+            font-size: 36px;
+            color: var(--accent-cyan);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .timer-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .timer-label {
+            font-size: 16px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .timer {
+            font-size: 42px;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            color: var(--accent-green);
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+            letter-spacing: 2px;
+        }
+
+        .timer.warning {
+            color: var(--accent-orange);
+            animation: pulse 1s infinite;
+        }
+
+        .timer.paused {
+            color: var(--accent-orange);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .btn.start-timer {
+            background: linear-gradient(135deg, #00ff88 0%, #00dd7a 100%);
+            color: var(--primary-dark);
+            min-width: 140px;
+        }
+
+        .btn.start-timer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn.start-timer:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn.pause-resume {
+            background: linear-gradient(135deg, var(--accent-orange) 0%, #ff5722 100%);
+            color: white;
+            min-width: 140px;
+        }
+
+        .btn.pause-resume:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, #00ccdd 100%);
+            color: var(--primary-dark);
+            min-width: 140px;
+            font-weight: 700;
+        }
+
+        .btn.secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 217, 255, 0.4);
+        }
+
+        .btn.refresh-btn {
+            background: linear-gradient(135deg, #6b5bff 0%, #5b4bef 100%);
+            color: white;
+        }
+
+        .btn.refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(107, 91, 255, 0.4);
+        }
+
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .missions-panel {
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid var(--accent-purple);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .missions-panel h2 {
+            font-size: 20px;
+            color: var(--accent-purple);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .missions-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        .mission-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--accent-purple);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .mission-card:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .mission-number {
+            font-size: 12px;
+            color: var(--accent-purple);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .mission-name {
+            font-size: 11px;
+            color: var(--text-primary);
+            line-height: 1.3;
+            font-weight: 600;
+        }
+
+        .leaderboard-panel {
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .leaderboard-panel h2 {
+            font-size: 20px;
+            color: var(--accent-cyan);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .leaderboard-table thead {
+            background: rgba(0, 217, 255, 0.15);
+        }
+
+        .leaderboard-table th {
+            padding: 12px;
+            text-align: left;
+            font-size: 11px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--accent-cyan);
+        }
+
+        .leaderboard-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+        }
+
+        .leaderboard-table tbody tr:nth-child(odd) {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .leaderboard-table tbody tr:hover {
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 10px;
+            background: var(--accent-cyan);
+            color: var(--primary-dark);
+            margin-right: 8px;
+        }
+
+        .rank-badge.rank-1 { background: var(--accent-green); }
+        .rank-badge.rank-2 { background: var(--accent-orange); }
+        .rank-badge.rank-3 { background: var(--accent-purple); }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-badge.waiting {
+            background: rgba(160, 160, 160, 0.2);
+            color: var(--text-secondary);
+        }
+
+        .status-badge.playing {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        .status-badge.finished {
+            background: rgba(0, 217, 255, 0.2);
+            color: var(--accent-cyan);
+        }
+
+        .shield-bar {
+            display: inline-block;
+            width: 50px;
+            height: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--accent-green);
+            border-radius: 2px;
+            overflow: hidden;
+            vertical-align: middle;
+        }
+
+        .shield-fill {
+            height: 100%;
+            background: var(--accent-green);
+            transition: width 0.3s ease;
+        }
+
+        .session-info {
+            background: rgba(0, 217, 255, 0.1);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .session-info h3 {
+            font-size: 14px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .session-url {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin-bottom: 12px;
+            color: var(--accent-green);
+        }
+
+        .copy-btn {
+            padding: 8px 15px;
+            background: var(--accent-purple);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: #7b6dff;
+        }
+
+        .ip-config-section {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 217, 255, 0.05) 100%);
+            border: 2px solid var(--accent-green);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .ip-config-section h3 {
+            margin-top: 0;
+            color: var(--accent-green);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ip-config-label {
+            font-size: 12px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 8px;
+            margin-top: 12px;
+        }
+
+        .ip-config-display {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--accent-green);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        #detectedIp {
+            font-weight: 600;
+            color: var(--accent-cyan);
+            font-size: 14px;
+            font-family: monospace;
+        }
+
+        .ip-config-input {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .custom-ip-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 4px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .custom-ip-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .custom-ip-input:focus {
+            outline: none;
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        .ip-config-btn {
+            padding: 8px 12px;
+            background: var(--accent-cyan);
+            border: none;
+            color: #000;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        .ip-config-btn:hover {
+            background: #00e5ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+        }
+
+        .ip-config-help {
+            font-size: 12px;
+            color: var(--accent-green);
+            margin-top: 12px;
+            margin-bottom: 0;
+            opacity: 0.8;
+        }
+
+        .no-teams {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-secondary);
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .message.success {
+            background: rgba(0, 255, 136, 0.2);
+            border: 2px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .message.error {
+            background: rgba(255, 23, 68, 0.2);
+            border: 2px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        @media (max-width: 1400px) {
+            .dashboard-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .missions-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .missions-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .leaderboard-table {
+                font-size: 11px;
+            }
+        }
+
+        /* SIDEBAR NAVIGATION */
+        .sidebar {
+            position: fixed;
+            left: -280px;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(26, 41, 66, 0.95);
+            border-right: 2px solid rgba(0, 217, 255, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+            transition: left 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            color: var(--accent-cyan);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            color: var(--accent-cyan);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .sidebar-account {
+            background: rgba(0, 217, 255, 0.05);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+
+        .account-label {
+            font-size: 11px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .account-name {
+            font-size: 14px;
+            color: var(--accent-cyan);
+            word-break: break-all;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 12px 15px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--accent-cyan);
+            border-left-color: var(--accent-cyan);
+        }
+
+        .sidebar-link.active {
+            background: rgba(0, 217, 255, 0.2);
+            color: var(--accent-cyan);
+            border-left-color: var(--accent-cyan);
+        }
+
+        .sidebar-divider {
+            height: 1px;
+            background: rgba(0, 217, 255, 0.2);
+            margin: 20px 0;
+        }
+
+        .sidebar-logout {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+        }
+
+        .logout-btn {
+            width: calc(100% - 40px);
+            padding: 12px;
+            background: rgba(255, 23, 68, 0.1);
+            border: 1px solid rgba(255, 23, 68, 0.3);
+            color: var(--accent-red);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 23, 68, 0.2);
+            border-color: var(--accent-red);
+        }
+
+        .hamburger {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .hamburger:hover {
+            background: rgba(0, 217, 255, 0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        .hamburger span {
+            width: 20px;
+            height: 2px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger.open span:nth-child(1) {
+            transform: rotate(45deg) translateY(10px);
+        }
+
+        .hamburger.open span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.open span:nth-child(3) {
+            transform: rotate(-45deg) translateY(-10px);
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .sidebar-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* URL MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(26, 41, 66, 0.95) 100%);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 217, 255, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+        }
+
+        .modal-header h2 {
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--accent-cyan);
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            color: var(--accent-green);
+        }
+
+        .modal-body {
+            margin-bottom: 30px;
+        }
+
+        .url-label {
+            font-size: 12px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .url-display {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 6px;
+            padding: 15px;
+            color: var(--accent-cyan);
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-all;
+            margin-bottom: 20px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, var(--accent-green) 0%, #00dd7a 100%);
+            color: var(--primary-dark);
+        }
+
+        .modal-btn.primary:hover {
+            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .modal-btn.secondary {
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+        }
+
+        .modal-btn.secondary:hover {
+            background: rgba(0, 217, 255, 0.2);
+            border-color: var(--accent-cyan);
+        }
+    </style>
+</head>
+<body>
+    <!-- HAMBURGER MENU -->
+    <div class="hamburger" id="hamburgerBtn">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+
+    <!-- SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Menu</div>
+            <button class="sidebar-close" id="sidebarCloseBtn">✕</button>
+        </div>
+
+        <div class="sidebar-account">
+            <div class="account-label">Logged In As</div>
+            <div class="account-name" id="adminUsername">Admin</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="/start-competition.html" class="sidebar-link active">Current Dashboard</a>
+            <a href="/competitions.html" class="sidebar-link">All Competitions</a>
+            <a href="/account-settings.html" class="sidebar-link">Admin Settings</a>
+        </nav>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-logout">
+            <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+        </div>
+    </div>
+
+    <!-- URL PARTICIPANT MODAL -->
+    <div class="modal" id="urlModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Share With Participants</h2>
+                <button class="modal-close" onclick="closeURLModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="url-label">Participant URL:</p>
+                <div class="url-display" id="modalUrl">Loading...</div>
+                <p style="font-size: 12px; color: var(--text-secondary); margin: 15px 0;">Share this link with teams to join the competition.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn primary" onclick="copyModalURL()">Copy URL</button>
+                <button class="modal-btn secondary" onclick="closeURLModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- CONTROL PANEL SCREEN -->
+        <div class="control-panel-screen active">
+            <div class="control-header">
+                <h1>THINK LIKE A HACKER</h1>
+                <p>Cybersecurity Competition Platform</p>
+            </div>
+
+            <div class="control-panel-box">
+                <h2>START COMPETITION</h2>
+                <button class="start-button" onclick="startCompetition()">START NEW COMPETITION</button>
+                <div id="controlMessage"></div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD SCREEN -->
+        <div class="dashboard-screen">
+            <div class="dashboard-header">
+                <h1>THINK LIKE A HACKER</h1>
+                <div class="timer-section">
+                    <span class="timer-label">COMPETITION TIME</span>
+                    <div class="timer" id="mainTimer">-:--:--</div>
+                </div>
+                <div id="timerStatus" style="font-size: 14px; color: var(--accent-green); margin-top: 10px;">Waiting for teams...</div>
+                
+                <div class="control-buttons">
+                    <button class="btn start-timer" id="startTimerBtn" onclick="startTimer()" style="display: none;">START TIMER</button>
+                    <button class="btn pause-resume" id="pauseResumeBtn" onclick="togglePauseResume()" style="display: none;">STOP TIMER</button>
+                    <button class="btn secondary" id="reportsBtn" onclick="openReports()" style="display: none;">VIEW REPORTS</button>
+                    <button class="btn finish" onclick="finishCompetition()" style="display: none;">FINISH COMPETITION</button>
+                </div>
+            </div>
+
+
+
+
+
+            <div class="dashboard-content">
+                <!-- MISSIONS PANEL -->
+                <div class="missions-panel">
+                    <h2>MISSIONS</h2>
+                    <div class="missions-grid" id="missionsGrid"></div>
+                </div>
+
+                <!-- LEADERBOARD PANEL -->
+                <div class="leaderboard-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0;">🏆 LIVE LEADERBOARD</h2>
+                        <button class="btn refresh-btn" onclick="refreshLeaderboard()" style="min-width: 100px; padding: 8px 15px; font-size: 12px;">REFRESH</button>
+                    </div>
+                    <div id="leaderboard"></div>
+                </div>
+
+                <!-- PARTICIPANT URL SECTION (Below Leaderboard) -->
+                <div id="sessionInfo" style="display: none; margin-top: 40px; padding: 20px; background: rgba(0, 217, 255, 0.05); border: 1px solid rgba(0, 217, 255, 0.2); border-radius: 8px;">
+                    <h3 style="margin: 0 0 15px 0; color: var(--accent-cyan);">📋 Participant URL</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 10px 0;">Share this link with teams to join the competition:</p>
+                    <div id="gameUrl" class="url-display" style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 6px; word-break: break-all; font-family: monospace; font-size: 12px; color: var(--accent-cyan); margin-bottom: 12px;">Loading...</div>
+                    <button class="btn primary" onclick="copyGameURL()" style="width: 100%; padding: 10px;">COPY URL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let currentSessionId = null;
+        let competitionStartTime = null;
+        let teams = {};
+        let timerInterval = null;
+        let isPaused = false;
+        let pausedTime = 0;
+
+        const missions = [
+            { id: 'mission-01', name: 'Phishing Detection' },
+            { id: 'mission-02', name: 'Incident Investigation' },
+            { id: 'mission-03', name: 'Crack the Vault' },
+            { id: 'mission-04', name: 'Decode the Message' },
+            { id: 'mission-05', name: 'Digital Forensics' },
+            { id: 'mission-06', name: 'Social Engineering' },
+            { id: 'mission-07', name: 'Ransomware Response' },
+            { id: 'mission-08', name: 'Password & Policy' },
+            { id: 'mission-09', name: 'Phishing Site Hunter' },
+            { id: 'mission-10', name: 'Capture the Flag' }
+        ];
+
+        function initializeSocket() {
+            socket = io();
+
+            socket.on('connect', () => {
+                console.log('Connected to server');
+            });
+
+            socket.on('leaderboard-update', (data) => {
+                console.log('Leaderboard update received:', data);
+                teams = data.teams || {};
+                console.log('Teams now:', teams);
+                updateLeaderboard();
+            });
+
+            socket.on('team-joined', (data) => {
+                console.log('Team joined event:', data.team.name);
+                // Immediately load fresh data from server
+                loadSessionData();
+            });
+
+            socket.on('competition-paused', (data) => {
+                console.log('Competition paused');
+                isPaused = true;
+                pausedTime = data.pausedAt;
+                if (timerInterval) clearInterval(timerInterval);
+                document.getElementById('pauseResumeBtn').textContent = 'START TIMER';
+                document.getElementById('timerStatus').textContent = 'Competition Paused';
+                document.getElementById('mainTimer').classList.add('paused');
+            });
+
+            socket.on('competition-resumed', (data) => {
+                console.log('Competition resumed');
+                isPaused = false;
+                competitionStartTime = data.startTime;
+                document.getElementById('pauseResumeBtn').textContent = 'STOP TIMER';
+                document.getElementById('timerStatus').textContent = 'Competition Resumed';
+                document.getElementById('mainTimer').classList.remove('paused');
+                startCompetitionTimer();
+            });
+
+            socket.on('timer-started', (data) => {
+                console.log('Timer started');
+                competitionStartTime = data.startTime;
+                document.getElementById('startTimerBtn').style.display = 'none';
+                document.getElementById('pauseResumeBtn').style.display = 'inline-block';
+                document.getElementById('timerStatus').textContent = 'Competition in Progress';
+                startCompetitionTimer();
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server - will auto-reconnect');
+            });
+        }
+
+        async function startCompetition() {
+            try {
+                const response = await fetch('/api/session/new');
+                const data = await response.json();
+
+                if (data.success) {
+                    currentSessionId = data.sessionId;
+                    // SAVE TO LOCALSTORAGE - persists across page navigation
+                    localStorage.setItem('activeSessionId', currentSessionId);
+                    displayDashboard();
+                    showMessage('Competition started! Share the game URL with teams.', 'success', 'dashboardMessage');
+                } else {
+                    showMessage('Error: ' + data.error, 'error', 'controlMessage');
+                }
+            } catch (error) {
+                showMessage('Error starting competition: ' + error.message, 'error', 'controlMessage');
+                console.error('Fetch error:', error);
+            }
+        }
+
+        function displayDashboard() {
+            document.querySelector('.control-panel-screen').classList.remove('active');
+            document.querySelector('.dashboard-screen').classList.add('active');
+            
+            // Initialize teams object
+            teams = {};
+            
+            // Load initial data and update leaderboard
+            loadSessionData().then(() => {
+                updateMissionsList();
+                updateLeaderboard(); // Ensure leaderboard updates after data loads
+            });
+            
+            // Join session via socket (as observer, not a team)
+            if (socket) {
+                socket.emit('join-session', { 
+                    sessionId: currentSessionId, 
+                    teamName: '__DASHBOARD_OBSERVER__',
+                    isObserver: true 
+                });
+            }
+
+            // Show control buttons
+            document.getElementById('reportsBtn').style.display = 'inline-block';
+            document.querySelector('.btn.finish').style.display = 'inline-block';
+            document.getElementById('sessionInfo').style.display = 'block';
+            
+            // Poll for updates every 2 seconds as a fallback
+            setInterval(() => {
+                if (currentSessionId) {
+                    loadSessionData();
+                }
+            }, 2000);
+        }
+
+        async function loadSessionData() {
+            try {
+                const response = await fetch(`/api/session/${currentSessionId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const session = data.session;
+                    teams = data.teams || {}; // Ensure teams is never null
+                    
+                    console.log('Session data loaded. Teams:', teams);
+                    
+                    // Generate game URL using simplified method
+                    const protocol = window.location.protocol;
+                    const host = window.location.host;
+                    const gameUrl = `${protocol}//${host}/cyber_competition.html?session=${session.id}`;
+                    
+                    document.getElementById('gameUrl').textContent = gameUrl;
+                    
+                    if (session.startTime) {
+                        competitionStartTime = session.startTime;
+                        document.getElementById('startTimerBtn').style.display = 'none';
+                        document.getElementById('pauseResumeBtn').style.display = 'inline-block';
+                        if (!isPaused) {
+                            document.getElementById('timerStatus').textContent = 'Competition in Progress';
+                            if (!timerInterval) {
+                                startCompetitionTimer();
+                            }
+                        }
+                    } else {
+                        document.getElementById('startTimerBtn').style.display = 'inline-block';
+                        document.getElementById('pauseResumeBtn').style.display = 'none';
+                    }
+
+                    updateUI();
+                    return true;
+                } else {
+                    console.error('Session data error:', data);
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+                // Still try to update UI even if fetch fails
+                updateLeaderboard();
+                return false;
+            }
+        }
+
+        function startTimer() {
+            if (!currentSessionId) return;
+            socket.emit('start-timer', { sessionId: currentSessionId });
+            console.log('Timer start requested');
+        }
+
+        function startCompetitionTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 100);
+            updateTimer();
+        }
+
+        function updateTimer() {
+            if (!competitionStartTime || isPaused) return;
+            
+            const now = Date.now();
+            const elapsed = now - competitionStartTime;
+            const totalTime = 2 * 60 * 60 * 1000; // 2 hours
+            const remaining = Math.max(0, totalTime - elapsed);
+            
+            const hours = Math.floor(remaining / (1000 * 60 * 60));
+            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+            
+            const timerEl = document.getElementById('mainTimer');
+            timerEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (remaining <= 10 * 60 * 1000) {
+                timerEl.classList.add('warning');
+            } else {
+                timerEl.classList.remove('warning');
+            }
+            
+            // Stop timer when it reaches 0
+            if (remaining <= 0) {
+                clearInterval(timerInterval);
+                timerEl.textContent = '00:00:00';
+                document.getElementById('timerStatus').textContent = 'Competition Finished!';
+            }
+        }
+
+        function togglePauseResume() {
+            if (!currentSessionId || !socket) return;
+            
+            if (isPaused) {
+                // Resume
+                socket.emit('resume-competition', { sessionId: currentSessionId });
+            } else {
+                // Pause
+                socket.emit('pause-competition', { sessionId: currentSessionId });
+            }
+        }
+
+        function updateUI() {
+            updateMissionsList();
+            updateLeaderboard();
+        }
+
+        function updateMissionsList() {
+            const missionsGrid = document.getElementById('missionsGrid');
+            missionsGrid.innerHTML = missions.map((m, idx) => 
+                `<div class="mission-card">
+                    <div class="mission-number">M${idx + 1}</div>
+                    <div class="mission-name">${m.name}</div>
+                </div>`
+            ).join('');
+        }
+
+        function updateLeaderboard() {
+            const leaderboard = document.getElementById('leaderboard');
+            
+            if (Object.keys(teams).length === 0) {
+                leaderboard.innerHTML = '<div class="no-teams">No teams connected yet</div>';
+                return;
+            }
+            
+            const sortedTeams = Object.values(teams)
+                .sort((a, b) => b.score - a.score);
+            
+            let html = '<table class="leaderboard-table"><thead><tr>';
+            html += '<th>Rank</th><th>Team</th><th>Mission</th><th>Score</th><th>Shield</th><th>Status</th>';
+            html += '</tr></thead><tbody>';
+            
+            sortedTeams.forEach((team, idx) => {
+                const rank = idx + 1;
+                const missionNum = team.missionIndex + 1;
+                const shieldPercent = Math.round(team.shield);
+                
+                html += `<tr>`;
+                html += `<td><span class="rank-badge rank-${rank}">${rank}</span></td>`;
+                html += `<td><strong>${team.name}</strong></td>`;
+                html += `<td>${missionNum}/10</td>`;
+                html += `<td><strong>${team.score}</strong></td>`;
+                html += `<td>
+                    <div class="shield-bar">
+                        <div class="shield-fill" style="width: ${shieldPercent}%"></div>
+                    </div>
+                </td>`;
+                html += `<td><span class="status-badge ${team.status}">${team.status}</span></td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            leaderboard.innerHTML = html;
+        }
+
+        async function finishCompetition() {
+            if (!currentSessionId) return;
+
+            if (!confirm('Are you sure you want to finish this competition?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/session/${currentSessionId}/finish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Clear active session from localStorage
+                    localStorage.removeItem('activeSessionId');
+                    // Redirect to reports
+                    window.location.href = `/reports.html?session=${currentSessionId}`;
+                }
+            } catch (error) {
+                showMessage('Error finishing competition: ' + error.message, 'error', 'dashboardMessage');
+            }
+        }
+
+        function openReports() {
+            if (currentSessionId) {
+                // Open in new tab - doesn't affect dashboard
+                const reportsUrl = `/reports.html?session=${currentSessionId}`;
+                window.open(reportsUrl, '_blank');
+                console.log('Reports opened in new tab');
+            }
+        }
+
+        function refreshLeaderboard() {
+            console.log('Refreshing leaderboard...');
+            loadSessionData();
+            showMessage('Leaderboard refreshed!', 'success', 'dashboardMessage');
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('URL copied to clipboard!', 'success', 'dashboardMessage');
+            }).catch(() => {
+                showMessage('Failed to copy', 'error', 'dashboardMessage');
+            });
+        }
+
+        function copyGameURL() {
+            const gameUrlElement = document.getElementById('gameUrl');
+            const text = gameUrlElement.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('Participant URL copied to clipboard!', 'success', 'dashboardMessage');
+            }).catch(() => {
+                showMessage('Failed to copy URL', 'error', 'dashboardMessage');
+            });
+        }
+
+        function showMessage(text, type, containerId) {
+            const container = document.getElementById(containerId);
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = text;
+            container.innerHTML = '';
+            container.appendChild(messageEl);
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageEl.remove();
+                }, 5000);
+            }
+        }
+
+        // ========== IP MANAGEMENT FUNCTIONS ==========
+        
+        let detectedServerIP = null;
+        let customServerIP = null;
+        let deploymentMode = 'local';  // 'local' or 'cloud'
+
+        function generateGameURL() {
+            if (!currentSessionId) return '';
+            
+            // Get the current domain/host
+            const protocol = window.location.protocol;
+            const host = window.location.host;
+            
+            // For cloud: use current domain
+            // For local: will be same domain since served from same server
+            const gameUrl = `${protocol}//${host}/cyber_competition.html?session=${currentSessionId}`;
+            
+            const urlElement = document.getElementById('gameUrl');
+            if (urlElement) {
+                urlElement.textContent = gameUrl;
+            }
+            
+            return gameUrl;
+        }
+
+        // SIDEBAR NAVIGATION
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        hamburgerBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('open');
+            hamburgerBtn.classList.toggle('open');
+        });
+
+        sidebarCloseBtn.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+            hamburgerBtn.classList.remove('open');
+        });
+
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+            hamburgerBtn.classList.remove('open');
+        });
+
+        // MODAL FUNCTIONS
+        function showURLModal(url) {
+            document.getElementById('modalUrl').textContent = url;
+            document.getElementById('urlModal').classList.add('show');
+        }
+
+        function closeURLModal() {
+            document.getElementById('urlModal').classList.remove('show');
+        }
+
+        function copyModalURL() {
+            const urlElement = document.getElementById('modalUrl');
+            const url = urlElement.textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                showMessage('URL copied to clipboard!', 'success', 'dashboardMessage');
+            }).catch(() => {
+                showMessage('Failed to copy URL', 'error', 'dashboardMessage');
+            });
+        }
+
+        // AUTHENTICATION
+        async function checkAdminAuth() {
+            const token = localStorage.getItem('adminToken');
+            try {
+                const response = await fetch('/api/admin/check-auth', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await response.json();
+                if (!data.authenticated) {
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/admin/setup';
+                } else {
+                    loadAdminInfo();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/admin/setup';
+            }
+        }
+
+        function loadAdminInfo() {
+            const token = localStorage.getItem('adminToken');
+            fetch('/api/admin/info', {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.username) {
+                    document.getElementById('adminUsername').textContent = data.username;
+                }
+            })
+            .catch(err => console.error('Error loading admin info:', err));
+        }
+
+        function logoutAdmin() {
+            const token = localStorage.getItem('adminToken');
+            fetch('/api/admin/logout', {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            }).finally(() => {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('activeSessionId');
+                window.location.href = '/admin/setup';
+            });
+        }
+
+        // Update startCompetition to show URL in modal
+        const originalStartCompetition = startCompetition;
+        window.startCompetition = function() {
+            originalStartCompetition();
+            // Show URL in modal after competition starts
+            setTimeout(() => {
+                const urlElement = document.getElementById('gameUrl');
+                if (urlElement && urlElement.textContent) {
+                    showURLModal(urlElement.textContent);
+                }
+            }, 500);
+        };
+
+        // Restore active session from localStorage
+        function restoreActiveSession() {
+            const savedSessionId = localStorage.getItem('activeSessionId');
+            if (savedSessionId) {
+                currentSessionId = savedSessionId;
+                displayDashboard();
+                console.log('Restored active session:', currentSessionId);
+            }
+        }
+
+        // Initialize
+        initializeSocket();
+        checkAdminAuth();
+        restoreActiveSession();
+    </script>
+</body>
+</html>

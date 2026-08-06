@@ -1,0 +1,2826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Think like a hacker: Competition Platform</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0a0e27;
+            --primary-darker: #05070f;
+            --accent-cyan: #00d9ff;
+            --accent-purple: #6b5bff;
+            --accent-green: #00ff88;
+            --accent-red: #ff1744;
+            --accent-orange: #ff6b35;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --shield-active: #00ff88;
+            --breach-color: #ff1744;
+            --grid-color: rgba(0, 217, 255, 0.05);
+            --transition-fast: 0.2s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-darker) 0%, #0f1535 50%, #0a0e27 100%);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            background-attachment: fixed;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, var(--grid-color) 2px, var(--grid-color) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, var(--grid-color) 2px, var(--grid-color) 4px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #app {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glitch {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes shieldPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes threatAlert {
+            0% { transform: scaleY(1); }
+            50% { transform: scaleY(1.1); }
+            100% { transform: scaleY(1); }
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* ===== WELCOME SCREEN ===== */
+        .welcome-screen {
+            text-align: center;
+        }
+
+        .welcome-header {
+            margin-bottom: 60px;
+        }
+
+        .shield-logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: shieldPulse 2s ease-in-out infinite;
+        }
+
+        .welcome-title {
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+
+        .welcome-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 50px;
+        }
+
+        .welcome-content {
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 10px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.2);
+        }
+
+        .welcome-text {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .input-field {
+            width: 100%;
+            max-width: 400px;
+            padding: 15px 20px;
+            background: rgba(0, 217, 255, 0.05);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: all var(--transition-fast);
+            margin: 0 auto;
+            display: block;
+        }
+
+        .input-field:focus {
+            outline: none;
+            background: rgba(0, 217, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .button {
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border: 2px solid var(--accent-green);
+            background: transparent;
+            color: var(--accent-green);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--accent-green);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .button:hover {
+            color: var(--primary-dark);
+        }
+
+        .button:hover::before {
+            left: 0;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== MISSION SCREEN ===== */
+        .mission-screen {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 30px;
+        }
+
+        .mission-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mission-header {
+            margin-bottom: 30px;
+        }
+
+        .mission-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .mission-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .mission-name-header {
+            background: linear-gradient(135deg, rgba(107, 91, 255, 0.2) 0%, rgba(0, 217, 255, 0.1) 100%);
+            border-left: 4px solid var(--accent-cyan);
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 6px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .mission-number {
+            font-size: 12px;
+            color: var(--accent-purple);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .mission-name-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+        }
+
+        .question-progress {
+            font-size: 13px;
+            color: var(--accent-green);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+
+        .question-card {
+            background: rgba(10, 14, 39, 0.8);
+            border: 1px solid var(--accent-purple);
+            border-radius: 8px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(107, 91, 255, 0.1);
+            margin-bottom: 20px;
+            transition: all var(--transition-fast);
+            flex-grow: 1;
+        }
+
+        .question-number {
+            font-size: 12px;
+            color: var(--accent-purple);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .question-text {
+            font-size: 18px;
+            color: var(--text-primary);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .email-display {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--accent-green);
+        }
+
+        .email-header {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--accent-cyan);
+        }
+
+        .email-line {
+            margin: 8px 0;
+        }
+
+        .email-label {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .email-content {
+            color: var(--text-secondary);
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+
+        .options-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 15px 20px;
+            background: rgba(0, 217, 255, 0.05);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-align: left;
+            font-size: 14px;
+            color: var(--text-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option:hover:not(.disabled) {
+            background: rgba(0, 217, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+        }
+
+        .option.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .option.correct {
+            border-color: var(--accent-green);
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+        }
+
+        .option.incorrect {
+            border-color: var(--accent-red);
+            background: rgba(255, 23, 68, 0.1);
+            color: var(--accent-red);
+            animation: glitch 0.4s ease;
+        }
+
+        .option-indicator {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+
+        .learning-tip {
+            background: rgba(255, 107, 53, 0.1);
+            border-left: 3px solid var(--accent-orange);
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 3px;
+            font-size: 13px;
+            color: var(--accent-orange);
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .feedback-message {
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .feedback-success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .feedback-error {
+            background: rgba(255, 23, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .next-button {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-card {
+            background: rgba(10, 14, 39, 0.8);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .shield-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 160px;
+            margin: 20px 0;
+        }
+
+        .shield-visual {
+            position: relative;
+            width: 120px;
+            height: 140px;
+        }
+
+        .shield-bg {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 217, 255, 0.1);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shield-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(180deg, var(--accent-green), var(--accent-cyan));
+            border-radius: 0 0 0 10px;
+            transition: height 0.5s ease;
+        }
+
+        .shield-text {
+            position: relative;
+            z-index: 2;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+        /* TOP PROGRESS PANEL */
+        .top-progress-panel {
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(107, 91, 255, 0.1) 100%);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.2);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .progress-team-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .progress-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            min-height: 50px;
+        }
+
+        .progress-item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 16px;
+            background: rgba(0, 217, 255, 0.1);
+            border-left: 3px solid var(--accent-cyan);
+            border-radius: 6px;
+            flex: 0 1 auto;
+        }
+
+        .progress-item-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 50px;
+        }
+
+        .progress-item-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-green);
+            letter-spacing: 0.5px;
+        }
+
+        .progress-shield-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 16px;
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 3px solid var(--accent-green);
+            border-radius: 6px;
+        }
+
+        .progress-shield-icon {
+            font-size: 28px;
+        }
+
+        .progress-shield-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-green);
+            min-width: 35px;
+        }
+
+        .progress-timer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 16px;
+            background: rgba(255, 107, 53, 0.1);
+            border-left: 3px solid var(--accent-orange);
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .progress-timer-icon {
+            font-size: 20px;
+        }
+
+        .progress-timer-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-orange);
+            letter-spacing: 1px;
+            min-width: 70px;
+        }
+
+        .progress-timer.warning .progress-timer-value {
+            color: var(--accent-red);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        /* IMPROVED NEXT BUTTON */
+        .next-button {
+            background: linear-gradient(135deg, var(--accent-green) 0%, #00dd7a 100%);
+            border: none;
+            color: var(--primary-dark);
+            font-size: 16px;
+            font-weight: 700;
+            padding: 16px 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.4);
+            min-width: 180px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .next-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: left 0.3s ease;
+        }
+
+        .next-button:hover::before {
+            left: 100%;
+        }
+
+        .next-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 255, 136, 0.6);
+        }
+
+        .next-button:active {
+            transform: translateY(0);
+        }
+
+        /* Improved shield number visibility */
+        .shield-text {
+            font-size: 32px;
+            font-weight: 900;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.8), 0 0 20px rgba(0, 217, 255, 0.4);
+            z-index: 2;
+            position: relative;
+            letter-spacing: 1px;
+        }
+
+
+        .shield-breach {
+            animation: threatAlert 0.5s ease;
+        }
+
+        .mission-progress {
+            background: rgba(10, 14, 39, 0.8);
+            border: 1px solid var(--accent-purple);
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .progress-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .progress-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-left: 2px solid var(--text-secondary);
+            padding-left: 12px;
+            transition: all var(--transition-fast);
+        }
+
+        .progress-item.completed {
+            color: var(--accent-green);
+            border-left-color: var(--accent-green);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .progress-item.current {
+            color: var(--accent-cyan);
+            border-left-color: var(--accent-cyan);
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        /* ===== MISSION COMPLETE SCREEN ===== */
+        .mission-complete-screen {
+            text-align: center;
+        }
+
+        .mission-complete-box {
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid var(--accent-green);
+            border-radius: 10px;
+            padding: 60px 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.2);
+            animation: fadeIn 0.6s ease-out;
+            margin: 40px 0;
+        }
+
+        .complete-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .complete-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .complete-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .complete-stat {
+            background: rgba(0, 217, 255, 0.05);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        .complete-stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .complete-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .continue-button {
+            margin-top: 30px;
+            min-width: 200px;
+        }
+
+        /* ===== FINAL SCREEN ===== */
+        .final-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .final-title {
+            font-size: 56px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .final-box {
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid var(--accent-green);
+            border-radius: 10px;
+            padding: 50px 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.25);
+            margin: 30px 0;
+            animation: fadeIn 0.8s ease-out 0.2s backwards;
+        }
+
+        .team-name {
+            font-size: 24px;
+            color: var(--accent-cyan);
+            margin-bottom: 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .final-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .final-stat {
+            background: rgba(0, 217, 255, 0.05);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .final-stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .final-stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .title-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            color: var(--primary-dark);
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: 700;
+            margin: 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: fadeIn 0.6s ease-out 0.4s backwards;
+        }
+
+        .final-message {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 800px) {
+            .mission-screen {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: -1;
+            }
+
+            .welcome-title {
+                font-size: 36px;
+            }
+
+            .final-title {
+                font-size: 42px;
+            }
+
+            .complete-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .final-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .drag-sort-item {
+            background: rgba(0, 217, 255, 0.05);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: grab;
+            transition: all var(--transition-fast);
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .drag-sort-item:hover:not(.locked) {
+            background: rgba(0, 217, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+        }
+
+        .drag-sort-item.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0, 217, 255, 0.05);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .checkbox-option:hover:not(.disabled) {
+            background: rgba(0, 217, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+        }
+
+        .checkbox-option.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .checkbox-option.correct {
+            border-color: var(--accent-green);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .checkbox-option.incorrect {
+            border-color: var(--accent-red);
+            background: rgba(255, 23, 68, 0.1);
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 3px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .checkbox-option.checked .checkbox {
+            background: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+        }
+
+        .checkbox-option.checked .checkbox::after {
+            content: '✓';
+            color: var(--primary-dark);
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .checkbox-label {
+            flex-grow: 1;
+            font-size: 14px;
+            color: var(--text-primary);
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        .timer-display {
+            font-size: 12px;
+            color: var(--accent-orange);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .timer-progress {
+            height: 4px;
+            background: rgba(255, 107, 53, 0.2);
+            border-radius: 2px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .timer-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-red));
+            transition: width 0.1s linear;
+            border-radius: 2px;
+        }
+
+        .input-field-text {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(0, 217, 255, 0.05);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: all var(--transition-fast);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+        }
+
+        .input-field-text:focus {
+            outline: none;
+            background: rgba(0, 217, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .scenario-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--accent-purple);
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .scenario-title {
+            color: var(--accent-purple);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .network-map {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--accent-green);
+            line-height: 1.8;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // ===== APPLICATION STATE =====
+        const app = {
+            currentScreen: 'welcome',
+            teamName: '',
+            teamId: null,
+            sessionId: null,
+            currentMissionIndex: 0,
+            currentQuestionIndex: 0,
+            score: 0,
+            shield: 100,
+            answeredQuestions: new Set(),
+            answers: {},
+            missionResults: {},
+            timerStarted: false,
+            timerExpired: false,
+            serverStartTime: null,
+            timerPaused: false,
+            pausedElapsedTime: 0,
+        };
+
+        // Socket.io initialization
+        let socket = null;
+        let socketReady = false;
+        function initializeSocket() {
+            return new Promise((resolve) => {
+                if (socketReady) {
+                    resolve();
+                    return;
+                }
+                
+                socket = io();
+                socket.on('connect', () => {
+                    console.log('Connected to server:', socket.id);
+                    socketReady = true;
+                    resolve();
+                });
+                socket.on('session-data', (data) => {
+                    console.log('Session data received:', data);
+                    // If timer is already running, sync to server time
+                    if (data && data.startTime && !app.timerStarted) {
+                        app.serverStartTime = data.startTime;
+                        app.timerStarted = true;
+                        initializeTimer();
+                        console.log('Timer synchronized from session data');
+                    }
+                });
+                socket.on('timer-started', (data) => {
+                    console.log('Timer started event received:', data);
+                    // Server has started the timer, sync to it
+                    if (data.startTime) {
+                        app.serverStartTime = data.startTime;
+                        if (!app.timerStarted) {
+                            app.timerStarted = true;
+                            initializeTimer();
+                        }
+                    }
+                });
+                socket.on('competition-paused', (data) => {
+                    console.log('Competition paused, elapsed time:', data.elapsedTime);
+                    app.timerPaused = true;
+                    if (timerInterval) clearInterval(timerInterval);
+                    // Use elapsed time sent from server
+                    app.pausedElapsedTime = data.elapsedTime || 0;
+                });
+                socket.on('competition-resumed', (data) => {
+                    console.log('Competition resumed');
+                    app.timerPaused = false;
+                    // Adjust server start time based on pause duration
+                    app.serverStartTime = data.startTime;
+                    app.pausedElapsedTime = 0;
+                    if (timerInterval) clearInterval(timerInterval);
+                    initializeTimer();
+                });
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from server');
+                    socketReady = false;
+                });
+            });
+        }
+
+        // Timer variables
+        let timerInterval = null;
+        let timerStartTime = null;
+        const TIMER_DURATION = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+
+        // ===== MISSION DATA =====
+        const missions = [
+            {
+                id: 'mission-01',
+                name: 'MISSION 01',
+                title: 'Phishing Detection',
+                description: 'Identify Phishing Emails',
+                questions: [
+                    {
+                        type: 'email-classify',
+                        subject: 'Scheduled VPN Maintenance Tonight',
+                        from: 'IT Support <itsupport@company.com>',
+                        body: 'Hello Team,\n\nOur VPN servers will undergo scheduled maintenance today from 10:00 PM to 11:30 PM. During this time, remote access may be temporarily unavailable.\n\nNo action is required.\n\nThank you,\nIT Support',
+                        correctAnswer: 'legitimate',
+                        options: [
+                            { text: 'Legitimate', value: 'legitimate' },
+                            { text: 'Phishing', value: 'phishing' }
+                        ],
+                        explanation: 'This is a legitimate IT support email. It comes from the official company domain, has no urgent calls to action, and doesn\'t request credentials or sensitive information.'
+                    },
+                    {
+                        type: 'email-classify',
+                        subject: 'URGENT: Your Microsoft Password Expires Today',
+                        from: 'Microsoft Security <security@microsoft365-login.com>',
+                        body: 'Dear Employee,\n\nYour Microsoft account password expires today.\nFailure to verify your account within 30 minutes will result in permanent suspension.\n\nVerify My Account\n\nThank you,\nMicrosoft Security Team',
+                        correctAnswer: 'phishing',
+                        options: [
+                            { text: 'Legitimate', value: 'legitimate' },
+                            { text: 'Phishing', value: 'phishing' }
+                        ],
+                        explanation: 'This is phishing. Red flags: suspicious domain (microsoft365-login.com), false urgency, threat of account suspension, and suspicious "Verify" link. Microsoft doesn\'t request verification via email.'
+                    },
+                    {
+                        type: 'email-classify',
+                        subject: 'Updated Holiday Schedule',
+                        from: 'HR Department <hr@company.com>',
+                        body: 'Dear Employees,\n\nPlease find attached the updated public holiday schedule for the remainder of the year.\nIf you have any questions, contact HR.\n\nRegards,\nHuman Resources',
+                        correctAnswer: 'legitimate',
+                        options: [
+                            { text: 'Legitimate', value: 'legitimate' },
+                            { text: 'Phishing', value: 'phishing' }
+                        ],
+                        explanation: 'This is legitimate. Official company domain, no requests for credentials, routine HR communication, and professional tone.'
+                    },
+                    {
+                        type: 'email-classify',
+                        subject: 'Outstanding Invoice #48372',
+                        from: 'Accounts <finance@invoice-payments.net>',
+                        body: 'Dear Customer,\n\nAn outstanding payment has been detected.\nPlease review the attached file immediately.\n\nAttachment: Invoice_48372.zip\n\nFailure to pay today may result in service interruption.',
+                        correctAnswer: 'phishing',
+                        options: [
+                            { text: 'Legitimate', value: 'legitimate' },
+                            { text: 'Phishing', value: 'phishing' }
+                        ],
+                        explanation: 'This is phishing. Suspicious domain (invoice-payments.net, not company domain), threat of service interruption, password-protected ZIP file (bypasses scanning), and urgency tactics.'
+                    },
+                    {
+                        type: 'email-classify',
+                        subject: 'Weekly Team Meeting Invitation',
+                        from: 'Project Manager <manager@company.com>',
+                        body: 'Hello Team,\n\nThis is a reminder for tomorrow\'s weekly meeting at 9:00 AM.\nThe Teams meeting link is included below.\n\nThank you.',
+                        correctAnswer: 'legitimate',
+                        options: [
+                            { text: 'Legitimate', value: 'legitimate' },
+                            { text: 'Phishing', value: 'phishing' }
+                        ],
+                        explanation: 'This is legitimate. Comes from company domain, routine meeting reminder, no suspicious links or requests, professional communication.'
+                    },
+                    {
+                        type: 'email-classify',
+                        subject: 'A document has been shared with you',
+                        from: 'Google Drive <drive-notification@googledrive-share.net>',
+                        body: 'John Smith has shared an important document with you.\nDue to company policy, this file will expire in 15 minutes.\n\nView Document',
+                        correctAnswer: 'phishing',
+                        options: [
+                            { text: 'Legitimate', value: 'legitimate' },
+                            { text: 'Phishing', value: 'phishing' }
+                        ],
+                        explanation: 'This is phishing. Suspicious domain (not official Google), artificial urgency (15-minute expiration), and pressure to click immediately.'
+                    },
+                    {
+                        type: 'email-classify',
+                        subject: 'Employee Cafeteria Feedback Survey',
+                        from: 'Facilities Team <facilities@company.com>',
+                        body: 'Hello,\n\nWe\'d appreciate your feedback on our cafeteria services.\nThe survey takes less than two minutes.\n\nThank you for helping us improve.\n\nFacilities Team',
+                        correctAnswer: 'legitimate',
+                        options: [
+                            { text: 'Legitimate', value: 'legitimate' },
+                            { text: 'Phishing', value: 'phishing' }
+                        ],
+                        explanation: 'This is legitimate. Official company domain, routine internal communication, low-pressure request, no suspicious elements.'
+                    },
+                    {
+                        type: 'email-classify',
+                        subject: 'Office Access Card Reminder',
+                        from: 'Security Office <security@company.com>',
+                        body: 'Please remember to wear your employee ID badge while on company premises.\nVisitors must be accompanied by an employee at all times.\n\nThank you,\nSecurity Office',
+                        correctAnswer: 'legitimate',
+                        options: [
+                            { text: 'Legitimate', value: 'legitimate' },
+                            { text: 'Phishing', value: 'phishing' }
+                        ],
+                        explanation: 'This is legitimate. Official company domain, routine security policy reminder, no suspicious requests or links.'
+                    }
+                ]
+            },
+            {
+                id: 'mission-02',
+                name: 'MISSION 02',
+                title: 'Incident Investigation',
+                description: 'Analyze Attack Scenarios',
+                questions: [
+                    {
+                        type: 'scenario',
+                        scenario: 'An accountant clicks a "Invoice Past Due" link and enters credentials into a cloned login portal. 12 minutes later, an Impossible Travel alert triggers—login from Lagos, Nigeria while the user normally works from Chicago.',
+                        question: 'What type of attack is this?',
+                        correctAnswer: 'credential-harvesting',
+                        options: [
+                            { text: 'Credential Harvesting (Phishing)', value: 'credential-harvesting' },
+                            { text: 'Malware Infection', value: 'malware' },
+                            { text: 'SQL Injection', value: 'sql-injection' },
+                            { text: 'DDoS Attack', value: 'ddos' }
+                        ],
+                        explanation: 'The attacker used a phishing email to steal credentials, then immediately accessed the account from a different location. This is credential harvesting.'
+                    },
+                    {
+                        type: 'scenario',
+                        scenario: 'An HR specialist downloads "Resume_2026.zip" from what appears to be a job applicant. EDR detects suspicious PowerShell activity through Microsoft Word.',
+                        question: 'What is the most appropriate immediate response?',
+                        correctAnswer: 'isolate-endpoint',
+                        options: [
+                            { text: 'Isolate the endpoint from the network', value: 'isolate-endpoint' },
+                            { text: 'Delete the suspicious file', value: 'delete-file' },
+                            { text: 'Ask the user to restart their computer', value: 'restart' },
+                            { text: 'Scan the network for similar files', value: 'scan-network' }
+                        ],
+                        explanation: 'Isolating the endpoint preserves evidence and prevents malware spread. This is the critical first step in malware containment.'
+                    },
+                    {
+                        type: 'scenario',
+                        scenario: 'A marketing employee clicks a sponsored search result leading to a fake software download site. The web proxy detects communication with a known Command-and-Control (C2) domain.',
+                        question: 'What threat level is this and why?',
+                        correctAnswer: 'critical-c2',
+                        options: [
+                            { text: 'Critical—active C2 communication indicates compromise', value: 'critical-c2' },
+                            { text: 'Medium—just a suspicious website visit', value: 'medium-visit' },
+                            { text: 'Low—malvertising is usually harmless', value: 'low-harmless' },
+                            { text: 'Unknown—need more information', value: 'unknown' }
+                        ],
+                        explanation: 'Command-and-Control communication is a strong indicator of active compromise. This requires immediate isolation and investigation.'
+                    },
+                    {
+                        type: 'scenario',
+                        scenario: 'An executive assistant grants permissions to "PDF Converter Pro" after clicking a phishing link. CSPM reports a high-risk OAuth application from an unverified publisher.',
+                        question: 'What should be done first?',
+                        correctAnswer: 'revoke-app',
+                        options: [
+                            { text: 'Revoke the application\'s permissions immediately', value: 'revoke-app' },
+                            { text: 'Monitor the application for suspicious activity', value: 'monitor' },
+                            { text: 'Ask the user about the application', value: 'ask-user' },
+                            { text: 'Change the user\'s password later', value: 'change-pwd' }
+                        ],
+                        explanation: 'Immediate revocation stops the attacker\'s access before they can steal more data. Time is critical in OAuth compromise.'
+                    },
+                    {
+                        type: 'scenario',
+                        scenario: 'A sales representative scans a fake QR code from an email. MTD detects an attempt to install a rogue profile on their managed BYOD device.',
+                        question: 'What is quishing and what\'s the response?',
+                        correctAnswer: 'qr-phishing-remove',
+                        options: [
+                            { text: 'QR phishing—remove enterprise access immediately', value: 'qr-phishing-remove' },
+                            { text: 'QR phishing—ignore, just monitor the device', value: 'qr-phishing-monitor' },
+                            { text: 'Random technical error—restart the device', value: 'technical-error' },
+                            { text: 'User error—educate them about QR codes', value: 'user-error' }
+                        ],
+                        explanation: 'Quishing is QR code phishing. Rogue profiles can grant attackers access to enterprise resources. Immediate removal of enterprise access protects company data.'
+                    }
+                ]
+            },
+            {
+                id: 'mission-03',
+                name: 'MISSION 03',
+                title: 'Crack the Vault',
+                description: 'Password Recovery Challenge',
+                questions: [
+                    {
+                        type: 'logic-puzzle',
+                        scenario: 'You recovered digital artifacts from a compromised workstation. The attacker encrypted a critical file and left behind clues.',
+                        clues: [
+                            'Browser History: docs.microsoft.com, github.com, coffeeclub.com/menu, maps.google.com',
+                            'Desktop Sticky Note: "Never use birthdays again."',
+                            'Company Password Policy: Minimum 9 characters, uppercase + lowercase, at least one number and one special character',
+                            'Calendar: Coffee Club Meeting, Friday, 25 July',
+                            'Browser Autofill (Partial): C _ _ _ _ _ @ 2 _'
+                        ],
+                        question: 'What is the recovered vault password?',
+                        correctAnswer: 'Coffee@25',
+                        options: [
+                            { text: 'Coffee@25', value: 'Coffee@25' },
+                            { text: 'Coffee#52', value: 'Coffee#52' },
+                            { text: 'Coding@25', value: 'Coding@25' },
+                            { text: 'Coffee123', value: 'Coffee123' }
+                        ],
+                        explanation: 'The autofill shows C______@2_, the calendar mentions "25 July", and browser history shows "coffeeclub.com". Coffee@25 satisfies the password policy (9+ chars, uppercase, lowercase, number, special char).'
+                    }
+                ]
+            },
+            {
+                id: 'mission-04',
+                name: 'MISSION 04',
+                title: 'Decode the Message',
+                description: 'Encryption vs. Encoding',
+                questions: [
+                    {
+                        type: 'decode-cipher',
+                        question: 'Decode this Base64-encoded message:',
+                        encoded: 'YXR0YWNrIGF0IDE0OjMw',
+                        method: 'Base64',
+                        correctAnswer: 'attack at 14:30',
+                        explanation: 'Base64 is encoding (reversible transformation), not encryption. Decoding YXR0YWNrIGF0IDE0OjMw reveals "attack at 14:30".'
+                    },
+                    {
+                        type: 'decode-cipher',
+                        question: 'Decode this Caesar Cipher (shift by 3):',
+                        encoded: 'Dwwdfn DW WKH EDFNXS VHUYHU',
+                        method: 'Caesar Cipher',
+                        correctAnswer: 'ATTACK AT THE BACKUP SERVER',
+                        explanation: 'Caesar Cipher shifts each letter by a fixed number. With shift +3, moving back 3 positions reveals "ATTACK AT THE BACKUP SERVER".'
+                    }
+                ]
+            },
+            {
+                id: 'mission-05',
+                name: 'MISSION 05',
+                title: 'Digital Forensics',
+                description: 'Reconstruct the Attack Timeline',
+                questions: [
+                    {
+                        type: 'scenario',
+                        scenario: 'Investigators recovered the attack timeline from log files. Review the evidence and answer the following questions about the sequence of events.',
+                        question: 'Which event happened FIRST?',
+                        correctAnswer: 'email-opened',
+                        options: [
+                            { text: 'Email opened (08:14)', value: 'email-opened' },
+                            { text: 'Credentials entered (08:15)', value: 'credentials-entered' },
+                            { text: 'PowerShell executed (08:20)', value: 'powershell-executed' }
+                        ],
+                        explanation: 'The attack started with the phishing email at 08:14. The victim had to open the email before they could enter credentials into the fake login page.'
+                    },
+                    {
+                        type: 'scenario',
+                        scenario: 'Continuing the timeline analysis...',
+                        question: 'What happened immediately AFTER the credentials were entered?',
+                        correctAnswer: 'travel-alert',
+                        options: [
+                            { text: 'PowerShell was executed', value: 'powershell' },
+                            { text: 'Impossible Travel alert triggered', value: 'travel-alert' },
+                            { text: 'New admin account created', value: 'admin-account' }
+                        ],
+                        explanation: 'The attacker used the stolen credentials to login from Nigeria at 08:18, while the user normally works from Chicago. This triggered an Impossible Travel alert before any malware execution.'
+                    },
+                    {
+                        type: 'scenario',
+                        scenario: 'Timeline progression continues...',
+                        question: 'Between PowerShell execution and encryption starting, what occurred?',
+                        correctAnswer: 'admin-then-server',
+                        options: [
+                            { text: 'New admin account created, then backup server accessed', value: 'admin-then-server' },
+                            { text: 'Backup server accessed, then admin account created', value: 'server-then-admin' },
+                            { text: 'Both happened at the same time', value: 'simultaneous' }
+                        ],
+                        explanation: 'At 08:20, PowerShell executed malware. At 08:22, a new admin account was created for persistence. At 08:24, the attacker accessed the backup server to locate critical data. This shows the attacker\'s progression from initial access → persistence → data discovery → encryption.'
+                    },
+                    {
+                        type: 'scenario',
+                        scenario: 'Final timeline analysis...',
+                        question: 'What was the LAST action in the attack sequence?',
+                        correctAnswer: 'encryption',
+                        options: [
+                            { text: 'Accessing the backup server', value: 'backup-access' },
+                            { text: 'Starting the encryption process', value: 'encryption' },
+                            { text: 'Creating a new admin account', value: 'admin' }
+                        ],
+                        explanation: 'At 08:25, encryption began, marking the final destructive phase of the attack. This timeline shows attackers work systematically: phishing → credential theft → account compromise → persistence → lateral movement → encryption.'
+                    }
+                ]
+            },
+            {
+                id: 'mission-06',
+                name: 'MISSION 06',
+                title: 'Social Engineering',
+                description: 'The USB Trap Decision Game',
+                questions: [
+                    {
+                        type: 'decision-choice',
+                        scenario: 'You find a USB drive labeled "Employee Payroll & Refill Bonuses — CONFIDENTIAL" on the counter.',
+                        question: 'What do you do?',
+                        correctAnswer: 'report-it',
+                        options: [
+                            { text: 'Report it to IT Security immediately', value: 'report-it', points: 25, impact: 'Safe choice—prevents potential malware spread' },
+                            { text: 'Take it to HR to identify the owner', value: 'take-hr', points: 10, impact: 'Moderate risk—HR might inadvertently plug it in' },
+                            { text: 'Plug it in to see what\'s on it', value: 'plug-in', points: 0, impact: 'THREAT DETECTED—Infected! You\'ve compromised your system.' }
+                        ],
+                        explanation: 'Report it to IT Security. USB drop attacks are designed to distribute malware. Never plug in unknown USB drives.'
+                    },
+                    {
+                        type: 'decision-choice',
+                        scenario: 'A USB labeled "Q3 Executive Bonus Structure" is discovered in the executive elevator.',
+                        question: 'What do you do?',
+                        correctAnswer: 'report-it',
+                        options: [
+                            { text: 'Report it to IT Security', value: 'report-it', points: 25, impact: 'Safe choice—proper incident response' },
+                            { text: 'Bring it to the executive office', value: 'bring-exec', points: 10, impact: 'Risky—might insert malware into executive network' },
+                            { text: 'Plug it in to see if it\'s a real backup', value: 'plug-in', points: 0, impact: 'INFECTION DETECTED—Malware activated on high-value system.' }
+                        ],
+                        explanation: 'Always report to IT Security. This appears to be targeting executives, making it especially dangerous.'
+                    },
+                    {
+                        type: 'decision-choice',
+                        scenario: 'A USB drive labeled "Store Loyalty Rewards — Manager Copy" is found near the registers.',
+                        question: 'What do you do?',
+                        correctAnswer: 'report-it',
+                        options: [
+                            { text: 'Report it to IT/Security team', value: 'report-it', points: 25, impact: 'Safe choice—prevents POS compromise' },
+                            { text: 'Check the lost-and-found', value: 'lost-found', points: 10, impact: 'Moderate—if found item is plugged in by staff' },
+                            { text: 'Insert it into the POS system to verify contents', value: 'pos-insert', points: 0, impact: 'CRITICAL BREACH—POS system now infected.' }
+                        ],
+                        explanation: 'Report it to IT. POS systems are high-value targets for attackers seeking payment card data.'
+                    },
+                    {
+                        type: 'decision-choice',
+                        scenario: 'A USB labeled "Staff Shift Payroll — Nursing Dept." appears in a hospital staff break room.',
+                        question: 'What do you do?',
+                        correctAnswer: 'report-it',
+                        options: [
+                            { text: 'Report it to IT Security immediately', value: 'report-it', points: 25, impact: 'Safe choice—protects patient systems' },
+                            { text: 'Try to find whose it is by asking staff', value: 'ask-staff', points: 10, impact: 'Risky—someone might plug it in' },
+                            { text: 'Leave it for the nursing supervisor', value: 'leave-it', points: 0, impact: 'BREACH—Healthcare data now compromised.' }
+                        ],
+                        explanation: 'Report immediately. Healthcare systems are critical infrastructure. Patient data compromise is extremely serious.'
+                    }
+                ]
+            },
+            {
+                id: 'mission-07',
+                name: 'MISSION 07',
+                title: 'Ransomware Response',
+                description: 'Incident Triage Decision',
+                questions: [
+                    {
+                        type: 'timed-choice',
+                        timerSeconds: 120,
+                        ransom: 'YOUR SYSTEMS ARE OURS.\n\nWe have encrypted critical business data.\nPay 5 BTC within the countdown or everything is leaked on the dark web.\n\nDo not call the police — we are watching.\n\n— The Wraith Collective',
+                        question: 'What is your response?',
+                        correctAnswer: 'restore-backup',
+                        options: [
+                            { text: 'Restore from backup (best practice)', value: 'restore-backup', points: 30, impact: 'THREAT BLOCKED—Systems restored from secure backups.' },
+                            { text: 'Contact law enforcement and authorities', value: 'contact-authorities', points: 15, impact: 'Good practice—enables investigation and prevents future attacks' },
+                            { text: 'Negotiate with the attacker for a discount', value: 'negotiate', points: 5, impact: 'Delays response and funds criminal activity' },
+                            { text: 'Pay the ransom immediately', value: 'pay-ransom', points: -20, impact: 'CRITICAL ERROR—Funds future attacks and doesn\'t guarantee decryption.' }
+                        ],
+                        explanation: 'Restore from backup. This is the #1 defense against ransomware. Paying doesn\'t guarantee recovery and funds criminal operations.'
+                    }
+                ]
+            },
+            {
+                id: 'mission-08',
+                name: 'MISSION 08',
+                title: 'Password & Policy Fortress',
+                description: 'Security Strength Challenge',
+                questions: [
+                    {
+                        type: 'password-builder',
+                        question: 'Create a strong password meeting the policy:',
+                        policy: 'Minimum 12 characters, uppercase + lowercase, at least one number and one symbol, not a dictionary word',
+                        correctAnswer: '', // Will be validated against rules
+                        validation: {
+                            minLength: 12,
+                            requireUppercase: true,
+                            requireLowercase: true,
+                            requireNumber: true,
+                            requireSymbol: true,
+                            forbiddenWords: ['password', 'company', 'admin', 'security']
+                        },
+                        explanation: 'Strong passwords are your first defense. Use a mix of character types, avoid dictionary words and personal info, and make it at least 12 characters.'
+                    },
+                    {
+                        type: 'policy-vote',
+                        question: 'Choose the best security policy:',
+                        options: [
+                            { text: 'Optional MFA for all employees (convenience)', value: 'optional', points: 5, impact: 'Low adoption rate' },
+                            { text: 'Mandatory MFA for all systems, no exceptions', value: 'mandatory', points: 30, impact: 'BEST PRACTICE—Significantly reduces breach risk' },
+                            { text: 'MFA only for executives and finance', value: 'selective', points: 10, impact: 'Partial protection—attackers target any accessible account' }
+                        ],
+                        correctAnswer: 'mandatory',
+                        explanation: 'Mandatory MFA for all systems is best practice. It prevents unauthorized access even if passwords are compromised.'
+                    }
+                ]
+            },
+            {
+                id: 'mission-09',
+                name: 'MISSION 09',
+                title: 'Phishing Site Hunter',
+                description: 'Identify Spoofed Websites',
+                questions: [
+                    {
+                        type: 'website-identify',
+                        scenario: 'Review these 4 websites. Identify which are real and which are spoofed phishing sites:',
+                        websites: [
+                            { id: 'w1', url: 'banking-secure.net/login', name: 'Banking Login', isReal: false, reason: 'Typosquatting—uses generic "banking-secure" instead of the actual bank domain' },
+                            { id: 'w2', url: 'paypa1.com', name: 'PayPal Login', isReal: false, reason: 'Character substitution—"1" instead of "l" in PayPal' },
+                            { id: 'w3', url: 'amazon.com', name: 'Amazon Official', isReal: true, reason: 'Legitimate official domain' },
+                            { id: 'w4', url: 'microsoft-account-verify.com', name: 'Microsoft Account', isReal: false, reason: 'Domain mimicry—looks similar but uses different registrar' }
+                        ],
+                        question: 'Which websites are phishing attempts?',
+                        correctAnswer: ['w1', 'w2', 'w4'],
+                        explanation: 'Phishing sites use tactics like typosquatting (similar-looking domains), character substitution, and official-sounding names. Always verify domain names carefully.'
+                    }
+                ]
+            },
+            {
+                id: 'mission-10',
+                name: 'MISSION 10',
+                title: 'Capture the Flag',
+                description: 'Final Challenge',
+                questions: [
+                    {
+                        type: 'ctf-fragment',
+                        fragment: 1,
+                        challenge: 'Decode this Caesar cipher (shift back 3):',
+                        encoded: 'SDBPHQW',
+                        question: 'What is the decoded word?',
+                        correctAnswer: 'PAYMENT',
+                        explanation: 'Caesar cipher with shift +3. Moving back 3 positions: S→P, D→A, B→Y, P→M, H→E, Q→N, W→T = PAYMENT'
+                    },
+                    {
+                        type: 'ctf-fragment',
+                        fragment: 2,
+                        challenge: 'Review this log entry and identify the suspicious one:',
+                        entries: [
+                            '1. 08:00 — store manager login, back office, routine',
+                            '2. 09:12 — POS admin login recorded from a country with no operations',
+                            '3. 11:30 — inventory restock logged, standard',
+                            '4. 15:00 — end-of-shift register reconciliation, normal',
+                            '5. 22:10 — nightly sales-data backup completed'
+                        ],
+                        question: 'Which entry number is suspicious?',
+                        correctAnswer: '2',
+                        explanation: 'Entry #2 shows admin access from an impossible geographic location. This is a clear indicator of account compromise.'
+                    },
+                    {
+                        type: 'ctf-fragment',
+                        fragment: 3,
+                        challenge: 'Cybersecurity Trivia:',
+                        question: 'What is the name for a cyberattack where an attacker tricks a victim into revealing sensitive information by pretending to be a trustworthy source?',
+                        correctAnswer: 'PHISHING',
+                        explanation: 'Phishing is the fundamental social engineering attack that this entire mission was based on.'
+                    },
+                    {
+                        type: 'ctf-fragment',
+                        fragment: 4,
+                        challenge: 'Final Logic Puzzle:',
+                        question: 'Take the total number of challenges in this mission (10). Subtract the challenge number of "Crack the Vault" (3). Then subtract the challenge number of "The USB Trap" (6). What number is left?',
+                        correctAnswer: '1',
+                        explanation: '10 - 3 - 6 = 1. You\'ve solved the flag!'
+                    }
+                ]
+            }
+        ];
+
+        // ===== RENDERING FUNCTIONS =====
+        function renderApp() {
+            const root = document.getElementById('app');
+            
+            if (app.timerExpired) {
+                root.innerHTML = renderTimerExpired();
+            } else if (app.currentScreen === 'welcome') {
+                root.innerHTML = renderWelcome();
+            } else if (app.currentScreen === 'mission') {
+                root.innerHTML = renderMission();
+                
+                // Emit team-started on first mission view
+                if (app.currentMissionIndex === 0 && app.currentQuestionIndex === 0 && app.sessionId && socket && !app.timerStarted) {
+                    socket.emit('team-started', { 
+                        sessionId: app.sessionId, 
+                        teamId: app.teamId,
+                        teamName: app.teamName 
+                    });
+                    console.log('Team started - waiting for timer to start from dashboard');
+                }
+            } else if (app.currentScreen === 'mission-complete') {
+                root.innerHTML = renderMissionComplete();
+            } else if (app.currentScreen === 'final') {
+                root.innerHTML = renderFinal();
+            }
+
+            attachEventListeners();
+        }
+
+        function renderWelcome() {
+            return `
+                <div class="container">
+                    <div class="screen active welcome-screen">
+                        <div class="welcome-header">
+                            <div class="shield-logo">🛡️</div>
+                            <h1 class="welcome-title">Think like a hacker</h1>
+                            <p class="welcome-subtitle">Cybersecurity Competition</p>
+                        </div>
+                        <div class="welcome-content">
+                            <p class="welcome-text">
+                                You are a cybersecurity team tasked with protecting critical infrastructure from cyber threats.
+                                Think like a hacker to navigate through 10 missions, identify threats, make critical decisions, and defend against attacks.
+                            </p>
+                            <p class="welcome-text">
+                                Your Cyber Shield protects your organization. Correct answers block threats and earn points.
+                                Incorrect answers trigger security breaches. The competition lasts approximately 2 hours.
+                            </p>
+                            <div class="input-group">
+                                <label class="input-label">Team Name</label>
+                                <input type="text" id="teamNameInput" class="input-field" placeholder="Enter your team name" maxlength="50">
+                            </div>
+                            <button class="button" id="startButton">Start Competition</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMission() {
+            const mission = missions[app.currentMissionIndex];
+            const question = mission.questions[app.currentQuestionIndex];
+            const questionNum = app.currentQuestionIndex + 1;
+            const totalQuestions = mission.questions.length;
+            const questionId = `${mission.id}-q${questionNum}`;
+            const isAnswered = app.answeredQuestions.has(questionId);
+            const userAnswer = app.answers[questionId];
+
+            let questionContent = '';
+            if (question.type === 'email-classify') {
+                questionContent = renderEmailQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'scenario') {
+                questionContent = renderScenarioQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'logic-puzzle') {
+                questionContent = renderLogicQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'decode-cipher') {
+                questionContent = renderDecodeQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'timeline-order') {
+                questionContent = renderTimelineQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'decision-choice') {
+                questionContent = renderDecisionQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'timed-choice') {
+                questionContent = renderTimedQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'password-builder') {
+                questionContent = renderPasswordQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'policy-vote') {
+                questionContent = renderPolicyQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'website-identify') {
+                questionContent = renderWebsiteQuestion(question, isAnswered, userAnswer);
+            } else if (question.type === 'ctf-fragment') {
+                questionContent = renderCTFQuestion(question, isAnswered, userAnswer);
+            }
+
+            const progressHTML = renderMissionProgress();
+
+            return `
+                <div class="container">
+                    <div class="screen active mission-screen">
+                        ${progressHTML}
+                        <div class="mission-content">
+                            <div class="mission-name-header">
+                                <div class="mission-number">Mission ${app.currentMissionIndex + 1}</div>
+                                <div class="mission-name-title">${mission.title}</div>
+                                <div class="question-progress">${questionNum}/${totalQuestions}</div>
+                            </div>
+                            <div class="question-card">
+                                ${questionContent}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderEmailQuestion(question, isAnswered, userAnswer) {
+            const isCorrect = userAnswer === question.correctAnswer;
+            
+            return `
+                <div class="question-text">Identify this email:</div>
+                <div class="email-display">
+                    <div class="email-header">
+                        <div class="email-line"><span class="email-label">From:</span> ${question.from}</div>
+                        <div class="email-line"><span class="email-label">Subject:</span> ${question.subject}</div>
+                    </div>
+                    <div class="email-content">${question.body}</div>
+                </div>
+                <div class="options-group">
+                    ${question.options.map(opt => {
+                        let optionClass = '';
+                        let indicator = '';
+                        if (isAnswered) {
+                            if (opt.value === userAnswer) {
+                                optionClass = isCorrect ? 'correct' : 'incorrect';
+                                indicator = isCorrect ? '✓' : '✗';
+                            } else if (opt.value === question.correctAnswer && !isCorrect) {
+                                optionClass = 'correct';
+                                indicator = '✓';
+                            }
+                        }
+                        return `
+                            <button class="option ${optionClass} ${isAnswered ? 'disabled' : ''}" 
+                                    ${isAnswered ? 'disabled' : ''} 
+                                    data-answer="${opt.value}">
+                                ${opt.text}
+                                ${indicator ? `<span class="option-indicator">${indicator}</span>` : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'THREAT BLOCKED ✓' : 'SECURITY BREACH ✗'}
+                    </div>
+                    <div class="learning-tip">${question.explanation}</div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderScenarioQuestion(question, isAnswered, userAnswer) {
+            const isCorrect = userAnswer === question.correctAnswer;
+            
+            return `
+                <div class="scenario-box">
+                    <div class="scenario-title">Incident Scenario</div>
+                    ${question.scenario}
+                </div>
+                <div class="question-text">${question.question}</div>
+                <div class="options-group">
+                    ${question.options.map(opt => {
+                        let optionClass = '';
+                        let indicator = '';
+                        if (isAnswered) {
+                            if (opt.value === userAnswer) {
+                                optionClass = isCorrect ? 'correct' : 'incorrect';
+                                indicator = isCorrect ? '✓' : '✗';
+                            } else if (opt.value === question.correctAnswer && !isCorrect) {
+                                optionClass = 'correct';
+                                indicator = '✓';
+                            }
+                        }
+                        return `
+                            <button class="option ${optionClass} ${isAnswered ? 'disabled' : ''}" 
+                                    ${isAnswered ? 'disabled' : ''} 
+                                    data-answer="${opt.value}">
+                                ${opt.text}
+                                ${indicator ? `<span class="option-indicator">${indicator}</span>` : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'ANALYSIS CORRECT ✓' : 'ANALYSIS INCORRECT ✗'}
+                    </div>
+                    <div class="learning-tip">${question.explanation}</div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderLogicQuestion(question, isAnswered, userAnswer) {
+            const isCorrect = userAnswer === question.correctAnswer;
+            
+            return `
+                <div class="scenario-box">
+                    <div class="scenario-title">Recovered Evidence</div>
+                    ${question.clues.map((clue, i) => `<div style="margin: 8px 0;">• ${clue}</div>`).join('')}
+                </div>
+                <div class="question-text">${question.question}</div>
+                <div class="options-group">
+                    ${question.options.map(opt => {
+                        let optionClass = '';
+                        let indicator = '';
+                        if (isAnswered) {
+                            if (opt.value === userAnswer) {
+                                optionClass = isCorrect ? 'correct' : 'incorrect';
+                                indicator = isCorrect ? '✓' : '✗';
+                            } else if (opt.value === question.correctAnswer && !isCorrect) {
+                                optionClass = 'correct';
+                                indicator = '✓';
+                            }
+                        }
+                        return `
+                            <button class="option ${optionClass} ${isAnswered ? 'disabled' : ''}" 
+                                    ${isAnswered ? 'disabled' : ''} 
+                                    data-answer="${opt.value}">
+                                ${opt.text}
+                                ${indicator ? `<span class="option-indicator">${indicator}</span>` : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'VAULT UNLOCKED ✓' : 'VAULT REMAINS LOCKED ✗'}
+                    </div>
+                    <div class="learning-tip">${question.explanation}</div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderDecodeQuestion(question, isAnswered, userAnswer) {
+            const isCorrect = (userAnswer || '').toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
+            
+            return `
+                <div class="question-text">${question.question}</div>
+                <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid var(--accent-cyan); border-radius: 5px; padding: 15px; margin: 15px 0; font-family: 'Courier New', monospace; font-size: 16px; color: var(--accent-green); text-align: center; letter-spacing: 2px;">
+                    ${question.encoded}
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 15px; text-transform: uppercase; text-align: center;">
+                    Method: ${question.method}
+                </div>
+                <input type="text" id="decodeInput" class="input-field-text" placeholder="Enter decoded message" ${isAnswered ? 'disabled' : ''}>
+                ${!isAnswered ? `<button class="button" id="submitDecodeButton" style="width: 100%;">DECODE MESSAGE</button>` : ''}
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'MESSAGE DECODED ✓' : 'INCORRECT DECODING ✗'}
+                    </div>
+                    <div class="learning-tip">Correct Answer: ${question.correctAnswer}<br>${question.explanation}</div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderTimelineQuestion(question, isAnswered, userAnswer) {
+            const isCorrect = userAnswer && JSON.stringify(userAnswer) === JSON.stringify(question.items.map((_, i) => i));
+            
+            return `
+                <div class="question-text">${question.scenario}</div>
+                <div id="timelineContainer" style="margin: 20px 0;">
+                    ${question.items.map((item, idx) => `
+                        <div class="drag-sort-item ${isAnswered ? 'locked' : ''}" draggable="${!isAnswered}" data-id="${item.id}">
+                            ${item.text}
+                        </div>
+                    `).join('')}
+                </div>
+                ${!isAnswered ? `<button class="button" id="submitTimelineButton" style="width: 100%;">CONFIRM TIMELINE</button>` : ''}
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'TIMELINE RECONSTRUCTED ✓' : 'TIMELINE INCORRECT ✗'}
+                    </div>
+                    <div class="learning-tip">${question.explanation}</div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderDecisionQuestion(question, isAnswered, userAnswer) {
+            const userAnswerObj = question.options.find(o => o.value === userAnswer);
+            const correctAnswerObj = question.options.find(o => o.value === question.correctAnswer);
+            const isCorrect = userAnswer === question.correctAnswer;
+            
+            return `
+                <div class="scenario-box">
+                    <div class="scenario-title">Social Engineering Scenario</div>
+                    ${question.scenario}
+                </div>
+                <div class="question-text">${question.question}</div>
+                <div class="options-group">
+                    ${question.options.map(opt => {
+                        let optionClass = '';
+                        let indicator = '';
+                        if (isAnswered) {
+                            if (opt.value === userAnswer) {
+                                optionClass = isCorrect ? 'correct' : 'incorrect';
+                                indicator = isCorrect ? '✓' : '✗';
+                            } else if (opt.value === question.correctAnswer && !isCorrect) {
+                                optionClass = 'correct';
+                                indicator = '✓';
+                            }
+                        }
+                        return `
+                            <button class="option ${optionClass} ${isAnswered ? 'disabled' : ''}" 
+                                    ${isAnswered ? 'disabled' : ''} 
+                                    data-answer="${opt.value}">
+                                <div style="text-align: left;">
+                                    <strong>${opt.text}</strong><br>
+                                    <span style="font-size: 12px; opacity: 0.8;">${opt.impact}</span>
+                                </div>
+                                ${indicator ? `<span class="option-indicator">${indicator}</span>` : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'THREAT NEUTRALIZED ✓' : 'SECURITY COMPROMISED ✗'}
+                    </div>
+                    <div class="learning-tip">${question.explanation}</div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderTimedQuestion(question, isAnswered, userAnswer) {
+            const userAnswerObj = question.options.find(o => o.value === userAnswer);
+            const correctAnswerObj = question.options.find(o => o.value === question.correctAnswer);
+            const isCorrect = userAnswer === question.correctAnswer;
+            
+            return `
+                <div style="background: rgba(255, 107, 53, 0.1); border: 1px solid var(--accent-orange); border-radius: 5px; padding: 15px; margin-bottom: 20px; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 13px; color: var(--accent-orange); line-height: 1.6;">
+${question.ransom}</div>
+                ${!isAnswered ? `
+                    <div class="timer-display">Incident Response: Make your decision quickly</div>
+                    <div class="timer-progress">
+                        <div class="timer-bar" id="timerBar" style="width: 100%;"></div>
+                    </div>
+                ` : ''}
+                <div class="question-text">${question.question}</div>
+                <div class="options-group">
+                    ${question.options.map(opt => {
+                        let optionClass = '';
+                        let indicator = '';
+                        if (isAnswered) {
+                            if (opt.value === userAnswer) {
+                                optionClass = isCorrect ? 'correct' : 'incorrect';
+                                indicator = isCorrect ? '✓' : '✗';
+                            } else if (opt.value === question.correctAnswer && !isCorrect) {
+                                optionClass = 'correct';
+                                indicator = '✓';
+                            }
+                        }
+                        return `
+                            <button class="option ${optionClass} ${isAnswered ? 'disabled' : ''}" 
+                                    ${isAnswered ? 'disabled' : ''} 
+                                    data-answer="${opt.value}">
+                                <div style="text-align: left;">
+                                    <strong>${opt.text}</strong><br>
+                                    <span style="font-size: 12px; opacity: 0.8;">${opt.impact}</span>
+                                </div>
+                                ${indicator ? `<span class="option-indicator">${indicator}</span>` : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'INCIDENT RESPONSE SUCCESS ✓' : 'INCIDENT RESPONSE FAILED ✗'}
+                    </div>
+                    <div class="learning-tip">${question.explanation}</div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderPasswordQuestion(question, isAnswered, userAnswer) {
+            const validation = question.validation;
+            let isValid = false;
+            let errors = [];
+            
+            if (userAnswer) {
+                if (userAnswer.length < validation.minLength) {
+                    errors.push(`Minimum ${validation.minLength} characters required`);
+                }
+                if (validation.requireUppercase && !/[A-Z]/.test(userAnswer)) {
+                    errors.push('Must include uppercase letters');
+                }
+                if (validation.requireLowercase && !/[a-z]/.test(userAnswer)) {
+                    errors.push('Must include lowercase letters');
+                }
+                if (validation.requireNumber && !/[0-9]/.test(userAnswer)) {
+                    errors.push('Must include at least one number');
+                }
+                if (validation.requireSymbol && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(userAnswer)) {
+                    errors.push('Must include at least one symbol (!@#$%...)');
+                }
+                if (validation.forbiddenWords.some(word => userAnswer.toLowerCase().includes(word))) {
+                    errors.push('Password contains forbidden words');
+                }
+                isValid = errors.length === 0;
+            }
+            
+            return `
+                <div class="question-text">${question.question}</div>
+                <div style="background: rgba(0, 217, 255, 0.05); border: 1px solid var(--accent-cyan); border-radius: 5px; padding: 15px; margin: 15px 0; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                    <strong>Policy:</strong> ${question.policy}
+                </div>
+                <input type="password" id="passwordInput" class="input-field-text" placeholder="Create your password here" ${isAnswered ? 'disabled' : ''}>
+                ${!isAnswered ? `<button class="button" id="submitPasswordButton" style="width: 100%;">CHECK PASSWORD STRENGTH</button>` : ''}
+                ${userAnswer && (isAnswered || !isAnswered) ? `
+                    <div style="background: rgba(0, 217, 255, 0.05); border: 1px solid var(--accent-cyan); border-radius: 5px; padding: 15px; margin: 15px 0; font-size: 12px;">
+                        <div style="color: var(--accent-cyan); margin-bottom: 8px; font-weight: 600;">Password Strength Check:</div>
+                        ${errors.map(err => `<div style="color: var(--accent-red); margin: 4px 0;">✗ ${err}</div>`).join('')}
+                        ${errors.length === 0 ? `<div style="color: var(--accent-green); margin: 4px 0;">✓ Password meets all requirements</div>` : ''}
+                    </div>
+                ` : ''}
+                ${isAnswered ? `
+                    <div class="feedback-message ${isValid ? 'feedback-success' : 'feedback-error'}">
+                        ${isValid ? 'PASSWORD ACCEPTED ✓' : 'PASSWORD REJECTED ✗'}
+                    </div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderPolicyQuestion(question, isAnswered, userAnswer) {
+            const isCorrect = userAnswer === question.correctAnswer;
+            
+            return `
+                <div class="question-text">${question.question}</div>
+                <div class="options-group">
+                    ${question.options.map(opt => {
+                        let optionClass = '';
+                        let indicator = '';
+                        if (isAnswered) {
+                            if (opt.value === userAnswer) {
+                                optionClass = isCorrect ? 'correct' : 'incorrect';
+                                indicator = isCorrect ? '✓' : '✗';
+                            } else if (opt.value === question.correctAnswer && !isCorrect) {
+                                optionClass = 'correct';
+                                indicator = '✓';
+                            }
+                        }
+                        return `
+                            <button class="option ${optionClass} ${isAnswered ? 'disabled' : ''}" 
+                                    ${isAnswered ? 'disabled' : ''} 
+                                    data-answer="${opt.value}">
+                                <div style="text-align: left;">
+                                    <strong>${opt.text}</strong><br>
+                                    <span style="font-size: 12px; opacity: 0.8;">${opt.impact}</span>
+                                </div>
+                                ${indicator ? `<span class="option-indicator">${indicator}</span>` : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'POLICY APPROVED ✓' : 'POLICY INSUFFICIENT ✗'}
+                    </div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderWebsiteQuestion(question, isAnswered, userAnswer) {
+            const phishingSites = question.websites.filter(w => !w.isReal);
+            const correctAnswers = phishingSites.map(w => w.id);
+            const isCorrect = userAnswer && JSON.stringify(userAnswer.sort()) === JSON.stringify(correctAnswers.sort());
+            
+            return `
+                <div class="question-text">${question.scenario}</div>
+                <div style="margin: 20px 0;">
+                    ${question.websites.map(site => {
+                        const isSelected = userAnswer && userAnswer.includes(site.id);
+                        return `
+                            <div class="checkbox-option ${isSelected ? 'checked' : ''} ${isAnswered ? 'disabled' : ''}" data-website="${site.id}">
+                                <div class="checkbox"></div>
+                                <div class="checkbox-label">
+                                    <strong>${site.name}</strong><br>
+                                    <span style="font-family: 'Courier New', monospace; font-size: 12px; color: var(--text-secondary);">${site.url}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                ${!isAnswered ? `<button class="button" id="submitWebsiteButton" style="width: 100%;">SUBMIT ASSESSMENT</button>` : ''}
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'PHISHING SITES IDENTIFIED ✓' : 'ASSESSMENT INCOMPLETE ✗'}
+                    </div>
+                    <div class="learning-tip">
+                        ${question.websites.map(site => {
+                            const selected = userAnswer && userAnswer.includes(site.id);
+                            const correct = !site.isReal;
+                            return `<div style="margin: 8px 0;">${site.url}: <strong>${site.reason}</strong></div>`;
+                        }).join('')}
+                    </div>
+                    <button class="button next-button" id="nextButton">Next</button>
+                ` : ''}
+            `;
+        }
+
+        function renderCTFQuestion(question, isAnswered, userAnswer) {
+            const isCorrect = (userAnswer || '').toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
+            
+            return `
+                <div style="background: rgba(107, 91, 255, 0.1); border: 1px solid var(--accent-purple); border-radius: 5px; padding: 15px; margin-bottom: 15px; font-size: 12px; color: var(--accent-purple); text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                    Fragment ${question.fragment} of 4
+                </div>
+                <div class="question-text">${question.challenge}</div>
+                ${question.encoded ? `
+                    <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid var(--accent-cyan); border-radius: 5px; padding: 15px; margin: 15px 0; font-family: 'Courier New', monospace; font-size: 16px; color: var(--accent-green); text-align: center; letter-spacing: 2px;">
+                        ${question.encoded}
+                    </div>
+                ` : ''}
+                ${question.entries ? `
+                    <div style="margin: 15px 0;">
+                        ${question.entries.map((entry, i) => `<div style="font-family: 'Courier New', monospace; font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin: 8px 0;">${entry}</div>`).join('')}
+                    </div>
+                ` : ''}
+                <div class="question-text">${question.question}</div>
+                <input type="text" id="ctfInput" class="input-field-text" placeholder="Enter answer" ${isAnswered ? 'disabled' : ''}>
+                ${!isAnswered ? `<button class="button" id="submitCTFButton" style="width: 100%;">SUBMIT ANSWER</button>` : ''}
+                ${isAnswered ? `
+                    <div class="feedback-message ${isCorrect ? 'feedback-success' : 'feedback-error'}">
+                        ${isCorrect ? 'FRAGMENT UNLOCKED ✓' : 'FRAGMENT INCORRECT ✗'}
+                    </div>
+                    <div class="learning-tip">Correct Answer: ${question.correctAnswer}<br>${question.explanation}</div>
+                    ${app.currentQuestionIndex < missions[app.currentMissionIndex].questions.length - 1 ? 
+                        `<button class="button next-button" id="nextButton">Next</button>` 
+                        : `<button class="button next-button" id="nextButton">VIEW RESULTS</button>`
+                    }
+                ` : ''}
+            `;
+        }
+
+        function renderStats() {
+            return `
+                <div class="stats-card">
+                    <div class="stat-label">Current Score</div>
+                    <div class="stat-value">${app.score}</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stat-label">Team Name</div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--accent-cyan); word-break: break-word;">${app.teamName}</div>
+                </div>
+            `;
+        }
+
+        function renderShield() {
+            const shieldHeight = Math.max(0, app.shield);
+            return `
+                <div class="stats-card">
+                    <div class="stat-label">Cyber Shield</div>
+                    <div class="shield-container">
+                        <div class="shield-visual">
+                            <div class="shield-bg">
+                                <div class="shield-fill" style="height: ${shieldHeight}%;"></div>
+                                <div class="shield-text">${Math.round(shieldHeight)}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initializeTimer() {
+            // Use server start time if available, otherwise local time
+            timerStartTime = app.serverStartTime || Date.now();
+            app.timerStarted = true;
+            
+            if (timerInterval) clearInterval(timerInterval);
+            
+            updateTimer(); // Update immediately
+            
+            timerInterval = setInterval(updateTimer, 100);
+        }
+
+        function updateTimer() {
+            // Safety checks
+            if (!app.serverStartTime && app.timerPaused === false) return;
+            
+            let elapsed;
+            
+            if (app.timerPaused) {
+                // When paused, show the elapsed time at pause moment
+                elapsed = app.pausedElapsedTime || 0;
+            } else {
+                // Calculate elapsed time from server start time
+                elapsed = Date.now() - app.serverStartTime;
+            }
+            
+            const remaining = Math.max(0, TIMER_DURATION - elapsed);
+            
+            const hours = Math.floor(remaining / (1000 * 60 * 60));
+            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+            
+            const timerValue = document.getElementById('timerValue');
+            if (timerValue) {
+                timerValue.textContent = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                console.warn('Timer element not found - will retry');
+            }
+            
+            const timerDisplay = document.getElementById('timerDisplay');
+            if (timerDisplay) {
+                if (remaining <= 10 * 60 * 1000) { // 10 minutes or less
+                    timerDisplay.classList.add('warning');
+                } else {
+                    timerDisplay.classList.remove('warning');
+                }
+            }
+            
+            if (remaining <= 0) {
+                clearInterval(timerInterval);
+                app.timerExpired = true;
+                showTimerExpired();
+            }
+        }
+
+        function checkAndEmitTeamFinished() {
+            // Check if this was the last question of the last mission
+            const currentMission = missions[app.currentMissionIndex];
+            const isLastQuestionOfMission = app.currentQuestionIndex === currentMission.questions.length - 1;
+            const isLastMission = app.currentMissionIndex === missions.length - 1;
+            
+            if (isLastQuestionOfMission && isLastMission) {
+                // This was the final answer - team is finished!
+                if (socket && app.sessionId && app.teamId) {
+                    socket.emit('team-finished', {
+                        sessionId: app.sessionId,
+                        teamId: app.teamId,
+                        finalScore: app.score,
+                        finalShield: app.shield
+                    });
+                    console.log('Team finished competition!');
+                }
+            }
+        }
+
+        function renderMissionProgress() {
+            const mission = missions[app.currentMissionIndex];
+            const shieldLevel = Math.round(app.shield);
+            const timerClass = shieldLevel <= 20 ? 'warning' : '';
+            
+            return `
+                <div class="top-progress-panel">
+                    <div class="progress-team-name">${app.teamName}</div>
+                    <div class="progress-row">
+                        <div class="progress-item-info">
+                            <div class="progress-item-label">Mission</div>
+                            <div class="progress-item-value">${app.currentMissionIndex + 1}/10</div>
+                        </div>
+                        <div class="progress-shield-display">
+                            <div class="progress-shield-icon">🛡️</div>
+                            <div class="progress-shield-value">${shieldLevel}%</div>
+                        </div>
+                        <div class="progress-item-info">
+                            <div class="progress-item-label">Score</div>
+                            <div class="progress-item-value">${app.score}</div>
+                        </div>
+                        <div class="progress-timer ${timerClass}" id="timerDisplay">
+                            <div class="progress-timer-icon">⏱️</div>
+                            <div class="progress-timer-value" id="timerValue">2:00:00</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMissionComplete() {
+            const mission = missions[app.currentMissionIndex];
+            const correctAnswers = mission.questions.filter((q, idx) => {
+                const qId = `${mission.id}-q${idx + 1}`;
+                return app.answers[qId] === q.correctAnswer;
+            }).length;
+            const totalQuestions = mission.questions.length;
+            const earnedPoints = correctAnswers * 10; // Simplified for now
+
+            return `
+                <div class="container">
+                    <div class="screen active mission-complete-screen">
+                        <div class="mission-complete-box">
+                            <div class="complete-icon">✓</div>
+                            <h2 class="complete-title">Mission Complete</h2>
+                            <div class="complete-stats">
+                                <div class="complete-stat">
+                                    <div class="complete-stat-label">Threats Blocked</div>
+                                    <div class="complete-stat-value">${correctAnswers}/${totalQuestions}</div>
+                                </div>
+                                <div class="complete-stat">
+                                    <div class="complete-stat-label">Points Earned</div>
+                                    <div class="complete-stat-value">+${earnedPoints}</div>
+                                </div>
+                            </div>
+                            <div style="text-align: center; color: var(--text-secondary); margin: 20px 0;">
+                                Cyber Shield: <span style="color: var(--accent-cyan);">${Math.round(app.shield)}%</span>
+                            </div>
+                            <button class="button continue-button" id="continueButton">Continue to Next Mission</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFinal() {
+            const totalQuestions = missions.reduce((sum, m) => sum + m.questions.length, 0);
+            const correctAnswers = Object.values(app.answers).filter((ans, idx) => {
+                // Find corresponding question
+                for (let m of missions) {
+                    for (let q of m.questions) {
+                        if (q.correctAnswer === ans) return true;
+                    }
+                }
+                return false;
+            }).length;
+
+            let title = 'Cyber Novice';
+            if (app.score >= 1800) title = 'Cyber Elite';
+            else if (app.score >= 1400) title = 'Security Guardian';
+            else if (app.score >= 1000) title = 'Cyber Defender';
+            else if (app.score >= 700) title = 'Threat Hunter';
+
+            return `
+                <div class="container">
+                    <div class="screen active final-screen">
+                        <h1 class="final-title">Mission Complete</h1>
+                        <div class="final-box">
+                            <div class="team-name">Team: ${app.teamName}</div>
+                            <div class="final-stats">
+                                <div class="final-stat">
+                                    <div class="final-stat-label">Final Score</div>
+                                    <div class="final-stat-value">${app.score}</div>
+                                </div>
+                                <div class="final-stat">
+                                    <div class="final-stat-label">Cyber Shield</div>
+                                    <div class="final-stat-value">${Math.round(app.shield)}%</div>
+                                </div>
+                                <div class="final-stat">
+                                    <div class="final-stat-label">Threats Blocked</div>
+                                    <div class="final-stat-value">${correctAnswers}/${totalQuestions}</div>
+                                </div>
+                                <div class="final-stat">
+                                    <div class="final-stat-label">Missions Completed</div>
+                                    <div class="final-stat-value">${missions.length}</div>
+                                </div>
+                            </div>
+                            <div class="title-badge">${title}</div>
+                            <div class="final-message">
+                                Congratulations on completing the cybersecurity mission! Your team demonstrated strong threat detection and incident response capabilities.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTimerExpired() {
+            let title = 'Cyber Novice';
+            if (app.score >= 1800) title = 'Cyber Elite';
+            else if (app.score >= 1400) title = 'Security Guardian';
+            else if (app.score >= 1000) title = 'Cyber Defender';
+            else if (app.score >= 700) title = 'Threat Hunter';
+
+            return `
+                <div class="container">
+                    <div class="screen active timer-expired-screen">
+                        <div class="final-box" style="text-align: center;">
+                            <div style="font-size: 64px; margin-bottom: 20px;">⏰</div>
+                            <h1 style="color: var(--accent-orange); margin-bottom: 20px; font-size: 36px;">TIME'S UP!</h1>
+                            <p style="font-size: 18px; color: var(--text-secondary); margin-bottom: 30px;">
+                                Your 2-hour competition time has expired.
+                            </p>
+                            <div class="final-stats">
+                                <div class="final-stat">
+                                    <div class="final-stat-label">Final Score</div>
+                                    <div class="final-stat-value">${app.score}</div>
+                                </div>
+                                <div class="final-stat">
+                                    <div class="final-stat-label">Cyber Shield</div>
+                                    <div class="final-stat-value">${Math.round(app.shield)}%</div>
+                                </div>
+                                <div class="final-stat">
+                                    <div class="final-stat-label">Performance Level</div>
+                                    <div class="final-stat-value">${title}</div>
+                                </div>
+                            </div>
+                            <button class="button" onclick="location.reload()">Start New Competition</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===== EVENT LISTENERS =====
+        function attachEventListeners() {
+            // Welcome screen
+            const startBtn = document.getElementById('startButton');
+            if (startBtn) {
+                startBtn.onclick = async () => {
+                    const teamName = document.getElementById('teamNameInput').value.trim();
+                    if (!teamName) {
+                        alert('Please enter a team name');
+                        return;
+                    }
+                    app.teamName = teamName;
+                    
+                    // Get session ID from URL
+                    const params = new URLSearchParams(window.location.search);
+                    app.sessionId = params.get('session');
+                    
+                    // Initialize socket and wait for connection
+                    await initializeSocket();
+                    console.log('Socket ready, joining session:', app.sessionId);
+                    
+                    // Now join session via socket (socket is definitely connected!)
+                    if (socket && socketReady && app.sessionId) {
+                        app.teamId = 'team-' + Math.random().toString(36).substr(2, 9);
+                        socket.emit('join-session', { 
+                            sessionId: app.sessionId, 
+                            teamName: app.teamName,
+                            teamId: app.teamId,
+                            isObserver: false
+                        });
+                        console.log('Team joined session:', app.sessionId, app.teamName);
+                    } else {
+                        console.error('Socket not ready or session ID missing');
+                        alert('Connection error. Please refresh the page and try again.');
+                        return;
+                    }
+                    
+                    app.currentScreen = 'mission';
+                    renderApp();
+                };
+                
+                const input = document.getElementById('teamNameInput');
+                if (input) {
+                    input.onkeypress = (e) => {
+                        if (e.key === 'Enter') startBtn.click();
+                    };
+                }
+            }
+
+            // Mission screen - option buttons
+            const options = document.querySelectorAll('.option');
+            options.forEach(opt => {
+                opt.onclick = () => {
+                    if (opt.classList.contains('disabled')) return;
+                    const answer = opt.dataset.answer;
+                    const questionId = `${missions[app.currentMissionIndex].id}-q${app.currentQuestionIndex + 1}`;
+                    const question = missions[app.currentMissionIndex].questions[app.currentQuestionIndex];
+                    
+                    app.answers[questionId] = answer;
+                    app.answeredQuestions.add(questionId);
+                    
+                    const isCorrect = answer === question.correctAnswer;
+                    if (isCorrect) {
+                        app.score += 25;
+                    } else {
+                        app.shield = Math.max(0, app.shield - 8);
+                    }
+                    
+                    // Emit answer to server
+                    if (socket && app.sessionId && app.teamId) {
+                        socket.emit('answer-submitted', {
+                            sessionId: app.sessionId,
+                            teamId: app.teamId,
+                            missionId: missions[app.currentMissionIndex].id,
+                            questionId: questionId,
+                            isCorrect: isCorrect,
+                            score: app.score,
+                            shield: app.shield
+                        });
+                    }
+                    
+                    // Check if team finished
+                    checkAndEmitTeamFinished();
+                    
+                    renderApp();
+                };
+            });
+
+            // Decode input
+            const submitDecode = document.getElementById('submitDecodeButton');
+            if (submitDecode) {
+                submitDecode.onclick = () => {
+                    const input = document.getElementById('decodeInput');
+                    const answer = input.value.trim();
+                    const questionId = `${missions[app.currentMissionIndex].id}-q${app.currentQuestionIndex + 1}`;
+                    const question = missions[app.currentMissionIndex].questions[app.currentQuestionIndex];
+                    
+                    app.answers[questionId] = answer;
+                    app.answeredQuestions.add(questionId);
+                    
+                    const isCorrect = answer.toLowerCase() === question.correctAnswer.toLowerCase();
+                    if (isCorrect) {
+                        app.score += 30;
+                    } else {
+                        app.shield = Math.max(0, app.shield - 5);
+                    }
+                    
+                    // Emit answer to server
+                    if (socket && app.sessionId && app.teamId) {
+                        socket.emit('answer-submitted', {
+                            sessionId: app.sessionId,
+                            teamId: app.teamId,
+                            missionId: missions[app.currentMissionIndex].id,
+                            questionId: questionId,
+                            isCorrect: isCorrect,
+                            score: app.score,
+                            shield: app.shield
+                        });
+                    }
+                    
+                    // Check if team finished
+                    checkAndEmitTeamFinished();
+                    
+                    renderApp();
+                };
+            }
+
+            // Timeline order
+            const submitTimeline = document.getElementById('submitTimelineButton');
+            if (submitTimeline) {
+                submitTimeline.onclick = () => {
+                    const items = Array.from(document.querySelectorAll('.drag-sort-item'));
+                    const order = items.map((_, idx) => idx);
+                    const questionId = `${missions[app.currentMissionIndex].id}-q${app.currentQuestionIndex + 1}`;
+                    
+                    app.answers[questionId] = order;
+                    app.answeredQuestions.add(questionId);
+                    
+                    const question = missions[app.currentMissionIndex].questions[app.currentQuestionIndex];
+                    const isCorrect = JSON.stringify(order) === JSON.stringify(question.items.map((_, i) => i));
+                    if (isCorrect) {
+                        app.score += 25;
+                    } else {
+                        app.shield = Math.max(0, app.shield - 8);
+                    }
+                    
+                    // Emit answer to server
+                    if (socket && app.sessionId && app.teamId) {
+                        socket.emit('answer-submitted', {
+                            sessionId: app.sessionId,
+                            teamId: app.teamId,
+                            missionId: missions[app.currentMissionIndex].id,
+                            questionId: questionId,
+                            isCorrect: isCorrect,
+                            score: app.score,
+                            shield: app.shield
+                        });
+                    }
+                    
+                    // Check if team finished
+                    checkAndEmitTeamFinished();
+                    
+                    renderApp();
+                };
+            }
+
+            // Password check
+            const submitPassword = document.getElementById('submitPasswordButton');
+            if (submitPassword) {
+                submitPassword.onclick = () => {
+                    const input = document.getElementById('passwordInput');
+                    const password = input.value;
+                    const questionId = `${missions[app.currentMissionIndex].id}-q${app.currentQuestionIndex + 1}`;
+                    const question = missions[app.currentMissionIndex].questions[app.currentQuestionIndex];
+                    
+                    app.answers[questionId] = password;
+                    app.answeredQuestions.add(questionId);
+                    
+                    const validation = question.validation;
+                    const isValid = password.length >= validation.minLength &&
+                        /[A-Z]/.test(password) &&
+                        /[a-z]/.test(password) &&
+                        /[0-9]/.test(password) &&
+                        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) &&
+                        !validation.forbiddenWords.some(word => password.toLowerCase().includes(word));
+                    
+                    if (isValid) {
+                        app.score += 25;
+                    } else {
+                        app.shield = Math.max(0, app.shield - 10);
+                    }
+                    
+                    // Emit answer to server
+                    if (socket && app.sessionId && app.teamId) {
+                        socket.emit('answer-submitted', {
+                            sessionId: app.sessionId,
+                            teamId: app.teamId,
+                            missionId: missions[app.currentMissionIndex].id,
+                            questionId: questionId,
+                            isCorrect: isValid,
+                            score: app.score,
+                            shield: app.shield
+                        });
+                    }
+                    
+                    // Check if team finished
+                    checkAndEmitTeamFinished();
+                    
+                    renderApp();
+                };
+            }
+
+            // Website check
+            const submitWebsite = document.getElementById('submitWebsiteButton');
+            if (submitWebsite) {
+                submitWebsite.onclick = () => {
+                    const checkboxes = document.querySelectorAll('.checkbox-option.checked');
+                    const selected = Array.from(checkboxes).map(cb => cb.dataset.website);
+                    const questionId = `${missions[app.currentMissionIndex].id}-q${app.currentQuestionIndex + 1}`;
+                    const question = missions[app.currentMissionIndex].questions[app.currentQuestionIndex];
+                    
+                    app.answers[questionId] = selected;
+                    app.answeredQuestions.add(questionId);
+                    
+                    const phishing = question.websites.filter(w => !w.isReal).map(w => w.id);
+                    const isCorrect = JSON.stringify(selected.sort()) === JSON.stringify(phishing.sort());
+                    if (isCorrect) {
+                        app.score += 15;
+                    } else {
+                        app.shield = Math.max(0, app.shield - 5);
+                    }
+                    
+                    // Emit answer to server
+                    if (socket && app.sessionId && app.teamId) {
+                        socket.emit('answer-submitted', {
+                            sessionId: app.sessionId,
+                            teamId: app.teamId,
+                            missionId: missions[app.currentMissionIndex].id,
+                            questionId: questionId,
+                            isCorrect: isCorrect,
+                            score: app.score,
+                            shield: app.shield
+                        });
+                    }
+                    
+                    // Check if team finished
+                    checkAndEmitTeamFinished();
+                    
+                    renderApp();
+                };
+            }
+
+            // Website checkbox toggle
+            const checkboxes = document.querySelectorAll('.checkbox-option');
+            checkboxes.forEach(cb => {
+                cb.onclick = () => {
+                    if (cb.classList.contains('disabled')) return;
+                    cb.classList.toggle('checked');
+                };
+            });
+
+            // CTF submit
+            const submitCTF = document.getElementById('submitCTFButton');
+            if (submitCTF) {
+                submitCTF.onclick = () => {
+                    const input = document.getElementById('ctfInput');
+                    const answer = input.value.trim();
+                    const questionId = `${missions[app.currentMissionIndex].id}-q${app.currentQuestionIndex + 1}`;
+                    const question = missions[app.currentMissionIndex].questions[app.currentQuestionIndex];
+                    
+                    app.answers[questionId] = answer;
+                    app.answeredQuestions.add(questionId);
+                    
+                    const isCorrect = answer.toLowerCase() === question.correctAnswer.toLowerCase();
+                    if (isCorrect) {
+                        app.score += 10;
+                    } else {
+                        app.shield = Math.max(0, app.shield - 5);
+                    }
+                    
+                    // Emit answer to server
+                    if (socket && app.sessionId && app.teamId) {
+                        socket.emit('answer-submitted', {
+                            sessionId: app.sessionId,
+                            teamId: app.teamId,
+                            missionId: missions[app.currentMissionIndex].id,
+                            questionId: questionId,
+                            isCorrect: isCorrect,
+                            score: app.score,
+                            shield: app.shield
+                        });
+                    }
+                    
+                    // Check if team finished
+                    checkAndEmitTeamFinished();
+                    
+                    renderApp();
+                };
+            }
+
+            // Next button
+            const nextBtn = document.getElementById('nextButton');
+            if (nextBtn) {
+                nextBtn.onclick = () => {
+                    const mission = missions[app.currentMissionIndex];
+                    if (app.currentQuestionIndex < mission.questions.length - 1) {
+                        app.currentQuestionIndex++;
+                        renderApp();
+                    } else {
+                        // Mission complete
+                        if (app.currentMissionIndex < missions.length - 1) {
+                            app.currentScreen = 'mission-complete';
+                        } else {
+                            // Moving to final screen - team finished!
+                            app.currentScreen = 'final';
+                            checkAndEmitTeamFinished();
+                        }
+                        renderApp();
+                    }
+                };
+            }
+
+            // Continue button (mission complete)
+            const continueBtn = document.getElementById('continueButton');
+            if (continueBtn) {
+                continueBtn.onclick = () => {
+                    app.currentMissionIndex++;
+                    app.currentQuestionIndex = 0;
+                    app.currentScreen = 'mission';
+                    
+                    // Emit mission-changed to server
+                    if (socket && app.sessionId && app.teamId) {
+                        socket.emit('mission-changed', {
+                            sessionId: app.sessionId,
+                            teamId: app.teamId,
+                            missionIndex: app.currentMissionIndex
+                        });
+                    }
+                    
+                    renderApp();
+                };
+            }
+            
+            // Finish button (final screen)
+            const finishBtn = document.getElementById('finishButton');
+            if (finishBtn) {
+                finishBtn.onclick = () => {
+                    // Emit team-finished to server
+                    if (socket && app.sessionId && app.teamId) {
+                        socket.emit('team-finished', {
+                            sessionId: app.sessionId,
+                            teamId: app.teamId,
+                            finalScore: app.score,
+                            finalShield: app.shield
+                        });
+                    }
+                };
+            }
+
+            // Prevent back button
+            window.history.pushState(null, '', window.location.href);
+            window.onpopstate = () => {
+                window.history.pushState(null, '', window.location.href);
+            };
+        }
+
+        // Initialize
+        renderApp();
+    </script>
+</body>
+</html>

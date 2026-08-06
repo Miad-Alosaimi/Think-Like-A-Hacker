@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Admin Account - Think Like A Hacker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0f172a;
+            --bg-secondary: #1a2942;
+            --accent-cyan: #00d9ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff1744;
+            --text-primary: #e0e7ff;
+            --text-secondary: #a1aecb;
+            --border-color: rgba(0, 217, 255, 0.2);
+        }
+
+        body {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1a2942 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .setup-container {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(26, 41, 66, 0.8);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 12px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.1);
+        }
+
+        .setup-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 15px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        .password-requirement {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            padding-left: 20px;
+        }
+
+        .password-requirement::before {
+            content: "✓ ";
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+
+        .password-requirement.unmet::before {
+            content: "✗ ";
+            color: var(--accent-red);
+        }
+
+        .password-requirement.unmet {
+            color: var(--accent-red);
+        }
+
+        .create-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-cyan), #00b8d4);
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            margin-top: 30px;
+        }
+
+        .create-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.5);
+        }
+
+        .create-btn:active {
+            transform: translateY(0);
+        }
+
+        .create-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: var(--accent-red);
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+            text-align: center;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: var(--accent-green);
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .version {
+            font-size: 11px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-header">
+            <h1>FIRST TIME SETUP</h1>
+            <p class="subtitle">Create Admin Account</p>
+            <p class="description">Set up your administrator account to manage competitions.</p>
+        </div>
+
+        <form id="setupForm" onsubmit="handleSetup(event)">
+            <div class="form-group">
+                <label for="username">Admin Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    placeholder="Choose a username" 
+                    required
+                    autofocus
+                >
+                <div class="error-message" id="usernameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Admin Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Create a strong password" 
+                    required
+                    oninput="checkPasswordRequirements()"
+                >
+                <div class="password-requirement" id="lengthReq">At least 8 characters</div>
+                <div class="password-requirement" id="uppercaseReq">At least one uppercase letter</div>
+                <div class="password-requirement" id="numberReq">At least one number</div>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input 
+                    type="password" 
+                    id="confirmPassword" 
+                    placeholder="Re-enter password" 
+                    required
+                >
+                <div class="error-message" id="confirmError"></div>
+            </div>
+
+            <button type="submit" class="create-btn" id="setupBtn">
+                CREATE ADMIN ACCOUNT
+            </button>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="loading" id="loading"></div>
+        </form>
+
+        <div class="footer">
+            <div class="version">Version 1.0 Production Setup</div>
+        </div>
+    </div>
+
+    <script>
+        function checkPasswordRequirements() {
+            const password = document.getElementById('password').value;
+            const lengthReq = document.getElementById('lengthReq');
+            const uppercaseReq = document.getElementById('uppercaseReq');
+            const numberReq = document.getElementById('numberReq');
+
+            // Check length (8+)
+            if (password.length >= 8) {
+                lengthReq.classList.remove('unmet');
+            } else {
+                lengthReq.classList.add('unmet');
+            }
+
+            // Check uppercase
+            if (/[A-Z]/.test(password)) {
+                uppercaseReq.classList.remove('unmet');
+            } else {
+                uppercaseReq.classList.add('unmet');
+            }
+
+            // Check number
+            if (/[0-9]/.test(password)) {
+                numberReq.classList.remove('unmet');
+            } else {
+                numberReq.classList.add('unmet');
+            }
+        }
+
+        function validateForm() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Clear errors
+            document.getElementById('usernameError').textContent = '';
+            document.getElementById('passwordError').textContent = '';
+            document.getElementById('confirmError').textContent = '';
+            document.getElementById('errorMessage').textContent = '';
+
+            // Validate username
+            if (!username || username.length < 3) {
+                document.getElementById('usernameError').textContent = 'Username must be at least 3 characters';
+                return false;
+            }
+
+            // Validate password
+            if (password.length < 8) {
+                document.getElementById('passwordError').textContent = 'Password must be at least 8 characters';
+                return false;
+            }
+
+            if (!/[A-Z]/.test(password)) {
+                document.getElementById('passwordError').textContent = 'Password must contain uppercase letter';
+                return false;
+            }
+
+            if (!/[0-9]/.test(password)) {
+                document.getElementById('passwordError').textContent = 'Password must contain a number';
+                return false;
+            }
+
+            // Validate confirmation
+            if (password !== confirmPassword) {
+                document.getElementById('confirmError').textContent = 'Passwords do not match';
+                return false;
+            }
+
+            return true;
+        }
+
+        async function handleSetup(event) {
+            event.preventDefault();
+
+            if (!validateForm()) {
+                return;
+            }
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const setupBtn = document.getElementById('setupBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const loading = document.getElementById('loading');
+
+            errorMessage.classList.remove('show');
+            setupBtn.disabled = true;
+            loading.classList.add('show');
+
+            try {
+                const response = await fetch('/api/admin/setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Redirect to login page
+                    window.location.href = '/admin/login';
+                } else {
+                    errorMessage.textContent = data.message || 'Setup failed';
+                    errorMessage.classList.add('show');
+                    setupBtn.disabled = false;
+                    loading.classList.remove('show');
+                }
+            } catch (error) {
+                console.error('Setup error:', error);
+                errorMessage.textContent = 'Connection error. Please try again.';
+                errorMessage.classList.add('show');
+                setupBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        }
+
+        // Initial check
+        checkPasswordRequirements();
+    </script>
+</body>
+</html>

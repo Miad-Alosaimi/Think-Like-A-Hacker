@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start a Competition - Think Like A Hacker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0f172a;
+            --bg-secondary: #1a2942;
+            --accent-cyan: #00d9ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff1744;
+            --text-primary: #e0e7ff;
+            --text-secondary: #a1aecb;
+            --border-color: rgba(0, 217, 255, 0.2);
+        }
+
+        body {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1a2942 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hamburger {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .hamburger:hover {
+            background: rgba(0, 217, 255, 0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        .hamburger span {
+            width: 20px;
+            height: 2px;
+            background: var(--accent-cyan);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: #1a2942;
+            border-right: 2px solid var(--accent-cyan);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-title {
+            color: var(--accent-cyan);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .sidebar-close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            background: none;
+            border: none;
+            color: var(--accent-cyan);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .sidebar-account {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-nav {
+            padding: 15px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-link {
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--accent-cyan);
+            border-left-color: var(--accent-cyan);
+        }
+
+        .sidebar-link.active {
+            background: rgba(0, 217, 255, 0.15);
+            color: var(--accent-cyan);
+            border-left-color: var(--accent-cyan);
+        }
+
+        .sidebar-logout {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 23, 68, 0.2);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 23, 68, 0.3);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .sidebar-overlay.open {
+            display: block;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding-top: 40px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+        }
+
+        .content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 60vh;
+        }
+
+        .competition-box {
+            background: rgba(26, 41, 66, 0.8);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 10px;
+            padding: 60px 80px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.2);
+        }
+
+        .competition-icon {
+            font-size: 64px;
+            margin-bottom: 30px;
+        }
+
+        .competition-box h2 {
+            font-size: 24px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        .competition-box p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .start-button {
+            padding: 16px 40px;
+            background: linear-gradient(135deg, var(--accent-cyan), #00b8d4);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            transition: all 0.3s ease;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.5);
+        }
+
+        .start-button:active {
+            transform: translateY(0);
+        }
+
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .message.error {
+            background: rgba(255, 23, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1500;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a2942;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: var(--accent-cyan);
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--accent-cyan);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .url-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--accent-cyan);
+            margin: 15px 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, var(--accent-cyan), #00b8d4);
+            color: #000;
+        }
+
+        .modal-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+        }
+
+        .modal-btn.secondary {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .modal-btn.secondary:hover {
+            background: rgba(0, 217, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="hamburger" id="hamburgerBtn">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Menu</div>
+            <button class="sidebar-close" id="sidebarCloseBtn">✕</button>
+        </div>
+
+        <div class="sidebar-account">
+            <div id="usernameDisplay">Loading...</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="/start-competition.html" class="sidebar-link active">Current Dashboard</a>
+            <a href="/competitions.html" class="sidebar-link">All Competitions</a>
+            <a href="/account-settings.html" class="sidebar-link">Admin Settings</a>
+        </nav>
+
+        <div class="sidebar-logout">
+            <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>THINK LIKE A HACKER</h1>
+            <p>Cybersecurity Competition Platform</p>
+        </div>
+
+        <div class="content">
+            <div class="competition-box">
+                <div class="competition-icon">🎯</div>
+                <h2>Start a Competition</h2>
+                <p>Create a new cybersecurity competition session. Teams will join using the generated link.</p>
+                <button class="start-button" onclick="startCompetition()">START NEW COMPETITION</button>
+            </div>
+        </div>
+
+        <div id="messageContainer"></div>
+    </div>
+
+    <!-- URL Modal -->
+    <div class="modal" id="urlModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Competition Started!</h2>
+                <button class="modal-close" onclick="closeURLModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Share this URL with participants:</p>
+                <div class="url-display" id="modalUrl">Loading...</div>
+                <p style="font-size: 12px; color: var(--text-secondary); margin: 15px 0;">Teams can join the competition using this link.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn primary" onclick="copyModalURL()">Copy URL</button>
+                <button class="modal-btn secondary" onclick="proceedToDashboard()">Go to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        let socket = null;
+        let currentSessionId = null;
+
+        function initializeSocket() {
+            socket = io();
+            socket.on('connect', () => {
+                console.log('Connected to server');
+            });
+        }
+
+        async function checkAdminAuth() {
+            const token = localStorage.getItem('adminToken');
+            try {
+                const response = await fetch('/api/admin/check-auth', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await response.json();
+                if (!data.authenticated) {
+                    window.location.href = '/admin/setup';
+                } else {
+                    // Load admin info
+                    fetch('/api/admin/info', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }).then(res => res.json())
+                    .then(data => {
+                        if (data.username) {
+                            document.getElementById('usernameDisplay').textContent = `Admin: ${data.username}`;
+                        }
+                    });
+                }
+            } catch (error) {
+                window.location.href = '/admin/setup';
+            }
+        }
+
+        async function startCompetition() {
+            try {
+                const response = await fetch('/api/session/new');
+                const data = await response.json();
+
+                if (data.success) {
+                    currentSessionId = data.sessionId;
+                    localStorage.setItem('activeSessionId', currentSessionId);
+                    
+                    // Get the URL
+                    const protocol = window.location.protocol;
+                    const host = window.location.host;
+                    const gameUrl = `${protocol}//${host}/cyber_competition.html?session=${currentSessionId}`;
+                    
+                    // Show modal with URL
+                    document.getElementById('modalUrl').textContent = gameUrl;
+                    document.getElementById('urlModal').classList.add('show');
+                    
+                    showMessage('Competition created successfully!', 'success');
+                } else {
+                    showMessage('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error starting competition: ' + error.message, 'error');
+                console.error('Fetch error:', error);
+            }
+        }
+
+        function showMessage(text, type) {
+            const container = document.getElementById('messageContainer');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = text;
+            container.innerHTML = '';
+            container.appendChild(messageEl);
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageEl.remove();
+                }, 3000);
+            }
+        }
+
+        function copyModalURL() {
+            const urlElement = document.getElementById('modalUrl');
+            const text = urlElement.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('URL copied to clipboard!', 'success');
+            }).catch(() => {
+                showMessage('Failed to copy URL', 'error');
+            });
+        }
+
+        function proceedToDashboard() {
+            closeURLModal();
+            window.location.href = '/control-panel.html';
+        }
+
+        function closeURLModal() {
+            document.getElementById('urlModal').classList.remove('show');
+        }
+
+        function logoutAdmin() {
+            const token = localStorage.getItem('adminToken');
+            fetch('/api/admin/logout', {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            }).finally(() => {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('activeSessionId');
+                window.location.href = '/admin/setup';
+            });
+        }
+
+        // Sidebar toggle
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+
+        hamburgerBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('open');
+        });
+
+        sidebarCloseBtn.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+        });
+
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+        });
+
+        // If a competition is already running, this page should hand off to the
+        // control panel instead of offering to start a new one.
+        async function checkActiveSession() {
+            const savedSessionId = localStorage.getItem('activeSessionId');
+            if (!savedSessionId) return;
+
+            try {
+                const response = await fetch(`/api/session/${savedSessionId}`);
+                const data = await response.json();
+
+                if (data.success && data.session && data.session.status === 'active') {
+                    window.location.href = '/control-panel.html';
+                } else {
+                    // Session is finished or no longer exists - clear the stale reference
+                    localStorage.removeItem('activeSessionId');
+                }
+            } catch (error) {
+                console.error('Error checking active session:', error);
+            }
+        }
+
+        // Initialize
+        checkAdminAuth();
+        initializeSocket();
+        checkActiveSession();
+    </script>
+</body>
+</html>

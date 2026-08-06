@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Think Like A Hacker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0f172a;
+            --bg-secondary: #1a2942;
+            --accent-cyan: #00d9ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff1744;
+            --text-primary: #e0e7ff;
+            --text-secondary: #a1aecb;
+            --border-color: rgba(0, 217, 255, 0.2);
+        }
+
+        body {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1a2942 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title h1 {
+            font-size: 32px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header-title .logo {
+            font-size: 40px;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan), #00b8d4);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.5);
+        }
+
+        .btn-logout {
+            background: rgba(255, 23, 68, 0.2);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 23, 68, 0.3);
+        }
+
+        .start-competition-btn {
+            padding: 16px 30px;
+            font-size: 14px;
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.4);
+        }
+
+        .start-competition-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 35px rgba(0, 217, 255, 0.6);
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .competitions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .competition-card {
+            background: rgba(26, 41, 66, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .competition-card:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .competition-card.active {
+            border-color: var(--accent-green);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-status {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .card-status.finished {
+            background: rgba(255, 23, 68, 0.2);
+            color: var(--accent-red);
+        }
+
+        .card-info {
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .info-label {
+            color: var(--accent-green);
+        }
+
+        .card-url {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            word-break: break-all;
+            margin-bottom: 15px;
+            color: var(--accent-cyan);
+            font-family: 'Courier New', monospace;
+        }
+
+        .card-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .card-btn {
+            padding: 8px 12px;
+            font-size: 11px;
+            border: 1px solid var(--border-color);
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--accent-cyan);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .card-btn:hover {
+            background: rgba(0, 217, 255, 0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        .card-btn.danger {
+            background: rgba(255, 23, 68, 0.1);
+            color: var(--accent-red);
+            border-color: rgba(255, 23, 68, 0.3);
+        }
+
+        .card-btn.danger:hover {
+            background: rgba(255, 23, 68, 0.2);
+            border-color: var(--accent-red);
+        }
+
+        .message {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .message.error {
+            background: rgba(255, 23, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(26, 41, 66, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            color: var(--accent-cyan);
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--accent-green);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a2942;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-title {
+            color: var(--accent-cyan);
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-message {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--accent-cyan);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .modal-btn.confirm {
+            background: var(--accent-red);
+            color: #fff;
+            border-color: var(--accent-red);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .competitions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <div class="logo">🛡️</div>
+                <div>
+                    <h1>Admin Portal</h1>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary start-competition-btn" onclick="startNewCompetition()">
+                    ➕ START NEW COMPETITION
+                </button>
+                <button class="btn btn-logout" onclick="logout()">LOGOUT</button>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="messageContainer"></div>
+
+        <!-- Statistics -->
+        <div class="stats" id="statsContainer" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-value" id="totalCompetitions">0</div>
+                <div class="stat-label">Total Competitions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeCompetitions">0</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="completedCompetitions">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+        </div>
+
+        <!-- Competitions Section -->
+        <div class="section">
+            <div class="section-title">
+                📊 ACTIVE COMPETITION
+            </div>
+            <div id="activeCompetitionContainer"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                📈 PREVIOUS COMPETITIONS
+            </div>
+            <div id="competitionsContainer"></div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-title" id="confirmTitle">Confirm Action</div>
+            <div class="modal-message" id="confirmMessage"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn" onclick="closeModal()">CANCEL</button>
+                <button class="modal-btn confirm" id="confirmBtn" onclick="executeAction()">CONFIRM</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAction = null;
+        let currentActionData = null;
+        let competitions = [];
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch('/api/admin/check-auth', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await response.json();
+                if (!data.authenticated) {
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/admin/login';
+                }
+            } catch (error) {
+                localStorage.removeItem('adminToken');
+                window.location.href = '/admin/login';
+            }
+        }
+
+        // Load competitions
+        async function loadCompetitions() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch('/api/admin/competitions', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await response.json();
+                if (data.success) {
+                    competitions = data.competitions || [];
+                    renderCompetitions();
+                    updateStats();
+                } else if (response.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/admin/login';
+                }
+            } catch (error) {
+                showMessage('Error loading competitions', 'error');
+            }
+        }
+
+        // Render competitions
+        function renderCompetitions() {
+            const active = competitions.filter(c => c.status === 'active');
+            const other = competitions.filter(c => c.status !== 'active').reverse();
+
+            // Active competition
+            const activeContainer = document.getElementById('activeCompetitionContainer');
+            if (active.length > 0) {
+                activeContainer.innerHTML = active.map(c => renderCompetitionCard(c, true)).join('');
+            } else {
+                activeContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🎮</div>
+                        <p>No active competition</p>
+                        <p style="font-size: 12px; margin-top: 10px;">Click "START NEW COMPETITION" to begin</p>
+                    </div>
+                `;
+            }
+
+            // Other competitions
+            const container = document.getElementById('competitionsContainer');
+            if (other.length > 0) {
+                container.innerHTML = `<div class="competitions-grid">${other.map(c => renderCompetitionCard(c)).join('')}</div>`;
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <p>No previous competitions yet</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render single competition card
+        function renderCompetitionCard(competition, isActive = false) {
+            const status = competition.status === 'active' ? 'ACTIVE' : 'FINISHED';
+            const url = `${window.location.origin}/cyber_competition.html?session=${competition.id}`;
+            const createdDate = new Date(competition.createdAt).toLocaleString();
+            
+            return `
+                <div class="competition-card ${isActive ? 'active' : ''}">
+                    <div class="card-header">
+                        <div class="card-title">Session ${competition.id.substring(5, 12)}</div>
+                        <div class="card-status ${status === 'FINISHED' ? 'finished' : ''}">${status}</div>
+                    </div>
+                    <div class="card-info">
+                        <div class="info-row">
+                            <span class="info-label">Created:</span>
+                            <span>${createdDate}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Teams:</span>
+                            <span>${Object.keys(competition.teams || {}).length}</span>
+                        </div>
+                    </div>
+                    <div class="card-url">${url}</div>
+                    <div class="card-actions">
+                        <button class="card-btn" onclick="copyURL('${url}')">📋 COPY URL</button>
+                        <button class="card-btn" onclick="openReports('${competition.id}')">📊 REPORTS</button>
+                        ${competition.status === 'active' ? `
+                            <button class="card-btn" onclick="openDashboard('${competition.id}')">🎮 LIVE DASH</button>
+                            <button class="card-btn danger" onclick="finishCompetition('${competition.id}')">⏹ FINISH</button>
+                        ` : `
+                            <button class="card-btn danger" onclick="archiveCompetition('${competition.id}')">📦 ARCHIVE</button>
+                            <button class="card-btn danger" onclick="deleteCompetition('${competition.id}')">🗑 DELETE</button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update statistics
+        function updateStats() {
+            const total = competitions.length;
+            const active = competitions.filter(c => c.status === 'active').length;
+            const completed = competitions.filter(c => c.status === 'finished').length;
+
+            document.getElementById('totalCompetitions').textContent = total;
+            document.getElementById('activeCompetitions').textContent = active;
+            document.getElementById('completedCompetitions').textContent = completed;
+
+            document.getElementById('statsContainer').style.display = total > 0 ? 'grid' : 'none';
+        }
+
+        // Start new competition
+        async function startNewCompetition() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch('/api/admin/start-competition', { 
+                    method: 'POST',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Competition started successfully!', 'success');
+                    loadCompetitions();
+                } else if (response.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/admin/login';
+                } else {
+                    showMessage(data.message || 'Error starting competition', 'error');
+                }
+            } catch (error) {
+                showMessage('Error starting competition', 'error');
+            }
+        }
+
+        // Copy URL
+        async function copyURL(url) {
+            try {
+                await navigator.clipboard.writeText(url);
+                showMessage('URL copied to clipboard!', 'success');
+            } catch (error) {
+                showMessage('Failed to copy URL', 'error');
+            }
+        }
+
+        // Open reports
+        function openReports(sessionId) {
+            window.open(`/reports.html?session=${sessionId}`, '_blank');
+        }
+
+        // Open dashboard
+        function openDashboard(sessionId) {
+            window.open(`/control-panel.html?session=${sessionId}`, '_blank');
+        }
+
+        // Finish competition
+        function finishCompetition(sessionId) {
+            showConfirmation('Finish Competition?', 'Are you sure you want to finish this competition? You can still view reports afterwards.', async () => {
+                try {
+                    const token = localStorage.getItem('adminToken');
+                    const response = await fetch(`/api/admin/finish-competition/${sessionId}`, { 
+                        method: 'POST',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showMessage('Competition finished successfully!', 'success');
+                        loadCompetitions();
+                    } else {
+                        showMessage(data.message || 'Error finishing competition', 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error finishing competition', 'error');
+                }
+            });
+        }
+
+        // Archive competition
+        function archiveCompetition(sessionId) {
+            showConfirmation('Archive Competition?', 'Archive this competition? It will be hidden from the main list but data will be preserved.', async () => {
+                try {
+                    const token = localStorage.getItem('adminToken');
+                    const response = await fetch(`/api/admin/archive-competition/${sessionId}`, { 
+                        method: 'POST',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showMessage('Competition archived successfully!', 'success');
+                        loadCompetitions();
+                    } else {
+                        showMessage(data.message || 'Error archiving competition', 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error archiving competition', 'error');
+                }
+            });
+        }
+
+        // Delete competition
+        function deleteCompetition(sessionId) {
+            showConfirmation('Delete Competition?', 'Are you sure? This will permanently delete all data for this competition. This cannot be undone.', async () => {
+                try {
+                    const token = localStorage.getItem('adminToken');
+                    const response = await fetch(`/api/admin/delete-competition/${sessionId}`, { 
+                        method: 'DELETE',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showMessage('Competition deleted successfully!', 'success');
+                        loadCompetitions();
+                    } else {
+                        showMessage(data.message || 'Error deleting competition', 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error deleting competition', 'error');
+                }
+            });
+        }
+
+        // Show message
+        function showMessage(text, type) {
+            const container = document.getElementById('messageContainer');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            container.appendChild(message);
+
+            setTimeout(() => message.remove(), 5000);
+        }
+
+        // Show confirmation dialog
+        function showConfirmation(title, message, callback) {
+            currentAction = callback;
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmModal').classList.add('show');
+        }
+
+        // Execute action
+        function executeAction() {
+            if (currentAction) {
+                currentAction();
+            }
+            closeModal();
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('confirmModal').classList.remove('show');
+            currentAction = null;
+        }
+
+        // Logout
+        function logout() {
+            showConfirmation('Logout?', 'Are you sure you want to logout?', async () => {
+                try {
+                    const token = localStorage.getItem('adminToken');
+                    await fetch('/api/admin/logout', { 
+                        method: 'POST',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+                localStorage.removeItem('adminToken');
+                window.location.href = '/admin/login';
+            });
+        }
+
+        // Initialize
+        checkAuth();
+        loadCompetitions();
+        setInterval(loadCompetitions, 5000); // Refresh every 5 seconds
+    </script>
+</body>
+</html>

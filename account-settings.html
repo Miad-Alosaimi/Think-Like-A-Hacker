@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - Event Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0a0e27;
+            --accent-cyan: #00d9ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff1744;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: rgba(0, 217, 255, 0.2);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #0f1535 50%, #0a0e27 100%);
+            color: var(--text-primary);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 42px;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .settings-card {
+            background: rgba(26, 41, 66, 0.6);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            color: var(--accent-cyan);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .setting-group {
+            margin-bottom: 20px;
+        }
+
+        .setting-label {
+            font-size: 12px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .setting-value {
+            font-size: 14px;
+            color: var(--accent-cyan);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+
+        .action-btn {
+            padding: 12px 20px;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid var(--border-color);
+            color: var(--accent-cyan);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .action-btn:hover {
+            background: rgba(0, 217, 255, 0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        .action-btn.danger {
+            background: rgba(255, 23, 68, 0.1);
+            color: var(--accent-red);
+            border-color: rgba(255, 23, 68, 0.3);
+        }
+
+        .action-btn.danger:hover {
+            background: rgba(255, 23, 68, 0.2);
+            border-color: var(--accent-red);
+        }
+
+        .message {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 12px;
+        }
+
+        .message.success {
+            display: block;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: var(--accent-green);
+        }
+
+        .message.error {
+            display: block;
+            background: rgba(255, 23, 68, 0.1);
+            border: 1px solid rgba(255, 23, 68, 0.3);
+            color: var(--accent-red);
+        }
+
+        /* SIDEBAR NAVIGATION */
+        .sidebar {
+            position: fixed;
+            left: -280px;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(26, 41, 66, 0.95);
+            border-right: 2px solid var(--border-color);
+            padding: 20px;
+            overflow-y: auto;
+            transition: left 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            color: var(--accent-cyan);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            color: var(--accent-cyan);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .sidebar-account {
+            background: rgba(0, 217, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+
+        .account-label {
+            font-size: 11px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .account-name {
+            font-size: 14px;
+            color: var(--accent-cyan);
+            word-break: break-all;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 12px 15px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--accent-cyan);
+            border-left-color: var(--accent-cyan);
+        }
+
+        .sidebar-link.active {
+            background: rgba(0, 217, 255, 0.2);
+            color: var(--accent-cyan);
+            border-left-color: var(--accent-cyan);
+        }
+
+        .sidebar-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 20px 0;
+        }
+
+        .sidebar-logout {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+        }
+
+        .logout-btn {
+            width: calc(100% - 40px);
+            padding: 12px;
+            background: rgba(255, 23, 68, 0.1);
+            border: 1px solid rgba(255, 23, 68, 0.3);
+            color: var(--accent-red);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 23, 68, 0.2);
+        }
+
+        .hamburger {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .hamburger:hover {
+            background: rgba(0, 217, 255, 0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        .hamburger span {
+            width: 20px;
+            height: 2px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+        }
+
+        .hamburger.open span:nth-child(1) {
+            transform: rotate(45deg) translateY(10px);
+        }
+
+        .hamburger.open span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.open span:nth-child(3) {
+            transform: rotate(-45deg) translateY(-10px);
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .sidebar-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- HAMBURGER MENU -->
+    <div class="hamburger" id="hamburgerBtn">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+
+    <!-- SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Menu</div>
+            <button class="sidebar-close" id="sidebarCloseBtn">✕</button>
+        </div>
+
+        <div class="sidebar-account">
+            <div class="account-label">Logged In As</div>
+            <div class="account-name" id="adminUsername">Admin</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="/start-competition.html" class="sidebar-link">Current Dashboard</a>
+            <a href="/competitions.html" class="sidebar-link">All Competitions</a>
+            <a href="/account-settings.html" class="sidebar-link active">Admin Settings</a>
+        </nav>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-logout">
+            <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Account Settings</h1>
+        </div>
+
+        <div id="messageBox" class="message"></div>
+
+        <div class="settings-card">
+            <div class="card-title">Account Information</div>
+            
+            <div class="setting-group">
+                <div class="setting-label">Username</div>
+                <div class="setting-value" id="displayUsername">Loading...</div>
+                <p class="info-text">Your login username. Cannot be changed.</p>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Account Created</div>
+                <div class="setting-value" id="accountCreated">Loading...</div>
+                <p class="info-text">Date and time when your account was created.</p>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-title">Security</div>
+            
+            <div class="setting-group">
+                <p class="info-text">To change your password, please log out and use the password reset option on the login page, or contact your administrator.</p>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-title">Session</div>
+            
+            <div class="setting-group">
+                <p class="info-text">Your current session will expire after 24 hours of inactivity. You will need to log in again.</p>
+                <button class="action-btn danger" onclick="logoutAdmin()">Logout Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // SIDEBAR NAVIGATION
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        hamburgerBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('open');
+            hamburgerBtn.classList.toggle('open');
+        });
+
+        sidebarCloseBtn.addEventListener('click', closeSidebar);
+        sidebarOverlay.addEventListener('click', closeSidebar);
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+            hamburgerBtn.classList.remove('open');
+        }
+
+        // AUTHENTICATION
+        async function checkAdminAuth() {
+            const token = localStorage.getItem('adminToken');
+            try {
+                const response = await fetch('/api/admin/check-auth', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await response.json();
+                if (!data.authenticated) {
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/admin/setup';
+                } else {
+                    loadAccountInfo();
+                }
+            } catch (error) {
+                window.location.href = '/admin/setup';
+            }
+        }
+
+        function loadAccountInfo() {
+            const token = localStorage.getItem('adminToken');
+            fetch('/api/admin/info', {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.username) {
+                    document.getElementById('adminUsername').textContent = data.username;
+                    document.getElementById('displayUsername').textContent = data.username;
+                }
+                // Get account creation date from localStorage or set to unknown
+                const createdTime = localStorage.getItem('adminCreatedTime') || 'Account created on first login';
+                document.getElementById('accountCreated').textContent = createdTime;
+            })
+            .catch(err => console.error('Error loading account info:', err));
+        }
+
+        function logoutAdmin() {
+            const token = localStorage.getItem('adminToken');
+            fetch('/api/admin/logout', {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            }).finally(() => {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('activeSessionId');
+                window.location.href = '/admin/setup';
+            });
+        }
+
+        // Initialize
+        checkAdminAuth();
+    </script>
+</body>
+</html>
