@@ -707,6 +707,16 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('mission-changed', (data) => {
+        const { sessionId, teamId, missionIndex } = data;
+        const competition = loadCompetition(sessionId);
+        if (competition && competition.teams[teamId]) {
+            competition.teams[teamId].missionIndex = missionIndex;
+            saveCompetition(sessionId, competition);
+            io.to(sessionId).emit('leaderboard-update', { teams: competition.teams });
+        }
+    });
+
     socket.on('disconnect', () => {
         // Handle disconnect
     });
